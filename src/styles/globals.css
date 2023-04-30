@@ -1,27 +1,69 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+.grid-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+.grid-row {
+  display: flex;
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+.grid-square {
+  width: 9vw;
+  height: 9vw;
+  border: 1px solid #ccc;
+}
+
+.grid-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+
+.top-right {
+  border-radius: 0 0 0 300px;
+  background: repeating-radial-gradient(
+    ellipse farthest-corner at 100% 0,
+    #dbd1b4 0 5%,
+    #c2b280 5% 10%
+  );
+}
+
+.top-left {
+  border-radius: 0 0 300px 0;
+  background: repeating-radial-gradient(
+    ellipse farthest-corner at 0 0,
+    #dbd1b4 0 5%,
+    #c2b280 5% 10%
+  );
+}
+
+
+.bottom-right {
+  border-radius: 300px 0 0 0;
+  background: repeating-radial-gradient(
+    ellipse farthest-corner at 100% 100%,
+    #dbd1b4 0 5%,
+    #c2b280 5% 10%
+  );
+}
+
+.bottom-left {
+  border-radius: 0 300px 0 0;
+  background: repeating-radial-gradient(
+    ellipse farthest-corner at 0 100%,
+    #dbd1b4 0 5%,
+    #c2b280 5% 10%
+  );
+}
+
+
+.vertical {
+  background: repeating-linear-gradient(
+    90deg, 
+    #dbd1b4 0 7%,
+    #c2b280 7% 14%
+    );
 }

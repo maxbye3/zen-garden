@@ -1,0 +1,30 @@
+.grid-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .grid-row {
+    display: flex;
+  }
+  
+  .grid-square {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #ccc;
+  }
+  
+  .color-1 {
+    background-color: #ff0000;
+  }
+  
+  .color-2 {
+    background-color: #00ff00;
+  }
+  
+  .color-3 {
+    background-color: #0000ff;
+  }
+  
+  /* etc. for each color */
+  
