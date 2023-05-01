@@ -1,4 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import mossRock from "./image/moss-rock.png";
+import spiritHouse from "./image/spirit-house.png";
+import catLuck from "./image/cat.png";
+import styles from "./styles.module.css";
 
 const Grid: React.FC = () => {
   const [grid, setGrid] = useState<number[][]>(
@@ -8,28 +13,36 @@ const Grid: React.FC = () => {
   const [prevX, setPrevX] = useState<number | null>(null);
   const [prevY, setPrevY] = useState<number | null>(null);
   const [previousDirection, setPreviousDirection] = useState("");
-  const numUnfilledSquares = grid.reduce(
+  const numUnrock1Squares = grid.reduce(
     (acc, row) => acc + row.filter((col) => col === 0).length,
     0
   );
 
-  // function to generate random number between min and max (inclusive)
-  const getRandomIntInclusive = (min: number, max: number): number => {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  };
+  const rock1X = [6, 7, 8];
+  const rock1Y = [7, 8];
+  const rock2X = [2, 3];
+  const rock2Y = [0, 1];
+  const rock3X = [1, 2];
+  const rock3Y = [7, 8];
 
   const handleSquareClick = (x: number, y: number): void => {
+    if (rock1X.includes(x) && rock1Y.includes(y)) {
+      return;
+    }
+    if (rock2X.includes(x) && rock2Y.includes(y)) {
+      return;
+    }
     const styleSheet = document.styleSheets[0]; // get the first stylesheet in the document
     // onhover cover tile
     const currentTile = `.color-${currentColor} { background-color: purple}`;
     styleSheet.insertRule(currentTile); // insert the CSS class into the stylesheet
 
     if (grid[x][y] !== 0) {
-      console.log(`Square (${x}, ${y}) is already filled.`);
+      // console.log(`Square (${x}, ${y}) is already rock1.`);
       return;
     }
     if (prevX === null || prevY === null) {
-      console.log(`Square (${x}, ${y}) is the first filled square.`);
+      // console.log(`Square (${x}, ${y}) is the first rock1 square.`);
       const newGrid = grid.map((row, i) =>
         row.map((col, j) => (i === x && j === y ? currentColor : col))
       );
@@ -55,7 +68,6 @@ const Grid: React.FC = () => {
           angle = "90deg";
         }
         direction = "down";
-        console.log("current direction: " + direction);
       } else if (dx === -1 && dy === 0) {
         if (previousDirection === "left") {
           borderRadius = "0 0 0 300px";
@@ -90,9 +102,9 @@ const Grid: React.FC = () => {
         }
         direction = "left";
       } else {
-        console.log(
-          `Square (${x}, ${y}) is not adjacent to the previous square.`
-        );
+        // console.log(
+        //   `Square (${x}, ${y}) is not adjacent to the previous square.`
+        // );
         return;
       }
 
@@ -106,7 +118,7 @@ const Grid: React.FC = () => {
 
       setPreviousDirection(direction);
       // console.log(
-      //   `Square (${x}, ${y}) is filled by moving ${direction} from square (${prevX}, ${prevY}).`
+      //   `Square (${x}, ${y}) is rock1 by moving ${direction} from square (${prevX}, ${prevY}).`
       // );
       const newGrid = grid.map((row, i) =>
         row.map((col, j) => (i === x && j === y ? currentColor : col))
@@ -124,15 +136,56 @@ const Grid: React.FC = () => {
     <div>
       <div className="grid-container">
         <div className="grid-wrapper">
-          <p>Number of squares unfilled: {numUnfilledSquares}</p>
+          <p>Number of squares unrock1: {numUnrock1Squares}</p>
           {grid.map((row, x) => (
             <div key={x} className="grid-row">
               {row.map((col, y) => (
-                <div
-                  key={`${x}-${y}`}
-                  className={`grid-square color-${col}`}
-                  onMouseEnter={() => handleSquareClick(x, y)}
-                />
+                <>
+                  {rock3X[1] === x && rock3Y[1] === y && (
+                    <Image
+                      src={catLuck}
+                      className="catLuck"
+                      alt="lucky cat statue"
+                    />
+                  )}
+                  {rock1X[1] === x && rock1Y[1] === y && (
+                    <Image
+                      src={spiritHouse}
+                      className="spiritHouse"
+                      alt="spirit house"
+                    />
+                  )}
+                  {rock2X[0] === x && rock2Y[0] === y && (
+                    <Image
+                      src={mossRock}
+                      className="mossRock"
+                      alt="rock with moss on"
+                    />
+                  )}
+
+                  <div
+                    key={`${x}-${y}`}
+                    className={`grid-square color-${col} 
+                  ${
+                    rock1X.includes(x) && rock1Y.includes(y)
+                      ? "filled-square"
+                      : ""
+                  }
+                    ${
+                      rock2X.includes(x) && rock2Y.includes(y)
+                        ? "filled-square"
+                        : ""
+                    }
+                    ${
+                      rock3X.includes(x) && rock3Y.includes(y)
+                        ? "filled-square"
+                        : ""
+                    }
+                    
+                    `}
+                    onMouseEnter={() => handleSquareClick(x, y)}
+                  />
+                </>
               ))}
             </div>
           ))}

@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
 }
 
 .grid-row {
@@ -11,7 +12,8 @@
 .grid-square {
   width: 9vw;
   height: 9vw;
-  border: 1px solid #ccc;
+  border: .5px solid #ccc;
+
 }
 
 .grid-container {
@@ -19,51 +21,40 @@
   justify-content: center;
   align-items: center;
   height: 100vh;
+
 }
 
-
-.top-right {
-  border-radius: 0 0 0 300px;
-  background: repeating-radial-gradient(
-    ellipse farthest-corner at 100% 0,
-    #dbd1b4 0 5%,
-    #c2b280 5% 10%
-  );
+.filled-square {
+  background: purple;
 }
 
-.top-left {
-  border-radius: 0 0 300px 0;
-  background: repeating-radial-gradient(
-    ellipse farthest-corner at 0 0,
-    #dbd1b4 0 5%,
-    #c2b280 5% 10%
-  );
+/* .rock-1 {
+  background: url(src/pages/image/moss-rock.png);
+} */
+
+.mossRock{
+  position: absolute;
+  right: 10vw;
+  margin-top: -5vh;
+  width: 20vw;
+  height: 10vh;
+  z-index: 0;
 }
 
-
-.bottom-right {
-  border-radius: 300px 0 0 0;
-  background: repeating-radial-gradient(
-    ellipse farthest-corner at 100% 100%,
-    #dbd1b4 0 5%,
-    #c2b280 5% 10%
-  );
+.spiritHouse{
+  position: absolute;
+  right: 10vw;
+  margin-top: -5vh;
+  width: 20vw;
+  height: 14vh;
+  z-index: 0;
+}
+.catLuck{
+  position: absolute;
+  left: 0vw;
+  margin-top: 0vh;
+  width: 20vw;
+  height: 10vh;
+  z-index: 0;
 }
 
-.bottom-left {
-  border-radius: 0 300px 0 0;
-  background: repeating-radial-gradient(
-    ellipse farthest-corner at 0 100%,
-    #dbd1b4 0 5%,
-    #c2b280 5% 10%
-  );
-}
-
-
-.vertical {
-  background: repeating-linear-gradient(
-    90deg, 
-    #dbd1b4 0 7%,
-    #c2b280 7% 14%
-    );
-}
