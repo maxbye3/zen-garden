@@ -4,6 +4,7 @@ import mossRock from "./image/moss-rock.png";
 import spiritHouse from "./image/spirit-house.png";
 import catLuck from "./image/cat.png";
 import styles from "./styles.module.css";
+import Draggable from "react-touch/Draggable";
 
 const Grid: React.FC = () => {
   const [grid, setGrid] = useState<number[][]>(
@@ -185,7 +186,9 @@ const Grid: React.FC = () => {
                     }
                     
                     `}
-                    onMouseOver={() => handleSquareClick(x, y)}
+                    onTouchEnd={() => handleSquareClick(x, y)}
+                    onTouchStart={() => handleSquareClick(x, y)}
+                    onTouchMove={() => handleSquareClick(x, y)}
                   />
                 </>
               ))}
