@@ -136,7 +136,7 @@ const Grid: React.FC = () => {
       <div className="grid-container">
         <div className="grid-wrapper">
           <p>
-            <small>3</small>Number of squares: {numUnrock1Squares}
+            <small>4</small>Number of squares: {numUnrock1Squares}
           </p>
           {grid.map((row, x) => (
             <div key={x} className="grid-row">
@@ -184,7 +184,8 @@ const Grid: React.FC = () => {
                     }
                     
                     `}
-                    onPointerMove={() => handleSquareClick(x, y)}
+                    onTouchMove={() => handleSquareClick(x, y)}
+                    onMouseMove={() => handleSquareClick(x, y)}
                   />
                 </>
               ))}
