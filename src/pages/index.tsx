@@ -3,8 +3,6 @@ import Image from "next/image";
 import mossRock from "./image/moss-rock.png";
 import spiritHouse from "./image/spirit-house.png";
 import catLuck from "./image/cat.png";
-import styles from "./styles.module.css";
-import Draggable from "react-touch/Draggable";
 
 const Grid: React.FC = () => {
   const [grid, setGrid] = useState<number[][]>(
@@ -138,7 +136,7 @@ const Grid: React.FC = () => {
       <div className="grid-container">
         <div className="grid-wrapper">
           <p>
-            <small>1</small>Number of squares: {numUnrock1Squares}
+            <small>2</small>Number of squares: {numUnrock1Squares}
           </p>
           {grid.map((row, x) => (
             <div key={x} className="grid-row">
