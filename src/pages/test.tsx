@@ -157,7 +157,14 @@ const Grid: React.FC = () => {
   return (
     <div>
       <div className="grid-container">
-        <div className="grid-wrapper">
+        <div
+          className="grid-wrapper"
+          onTouchMove={(event) => {
+            var x = event.touches[0].clientX;
+            var y = event.touches[0].clientY;
+            setTest(x + ", " + y);
+          }}
+        >
           set: {test}
           <p>Number of squares: {numUnrock1Squares}</p>
           {grid.map((row, x) => (
@@ -206,7 +213,6 @@ const Grid: React.FC = () => {
                     }
                     
                     `}
-                    onTouchMove={() => handleSquareClick(x, y)}
                   />
                 </>
               ))}
