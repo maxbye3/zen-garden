@@ -25,6 +25,7 @@ const Grid: React.FC = () => {
   const rock3Y = [7, 8];
 
   const handleSquareClick = (x: number, y: number): void => {
+    let stripeOrder;
     if (rock1X.includes(x) && rock1Y.includes(y)) {
       return;
     }
@@ -40,6 +41,7 @@ const Grid: React.FC = () => {
       // console.log(`Square (${x}, ${y}) is already rock1.`);
       return;
     }
+
     if (prevX === null || prevY === null) {
       // console.log(`Square (${x}, ${y}) is the first rock1 square.`);
       const newGrid = grid.map((row, i) =>
@@ -57,49 +59,69 @@ const Grid: React.FC = () => {
         borderRadius: string | boolean = false,
         angle = "";
       if (dx === 1 && dy === 0) {
-        if (previousDirection === "left") {
-          borderRadius = "300px 0 0 0";
-          borderPos = "100% 100%";
-        } else if (previousDirection === "right") {
-          borderRadius = "0 300px 0 0";
-          borderPos = "0 100%";
-        } else {
-          angle = "90deg";
-        }
+        // DOWN
         direction = "down";
-      } else if (dx === -1 && dy === 0) {
+        stripeOrder = "#dbd1b4 0 7%,#c2b280";
+
         if (previousDirection === "left") {
+          stripeOrder = "#c2b280 0 5%, #dbd1b4";
+          borderRadius = "300px 0 0 0";
+          borderPos = "100% 100%";
+        } else if (previousDirection === "right") {
+          stripeOrder = "#dbd1b4 0 5%, #c2b280";
+          borderRadius = "0 300px 0 0";
+          borderPos = "0 100%";
+        } else {
+          angle = "90deg";
+        }
+      } else if (dx === -1 && dy === 0) {
+        // UP
+        direction = "up";
+        stripeOrder = "#c2b280 0 7%,#dbd1b4";
+
+        if (previousDirection === "left") {
+          stripeOrder = "#dbd1b4 0 5%, #c2b280";
           borderRadius = "0 0 0 300px";
           borderPos = "100% 0";
         } else if (previousDirection === "right") {
+          stripeOrder = "#c2b280 0 5%, #dbd1b4";
           borderRadius = "0 0 300px 0";
           borderPos = "0 0";
         } else {
           angle = "90deg";
         }
-        direction = "up";
       } else if (dx === 0 && dy === 1) {
+        // RIGHT
+        direction = "right";
+        stripeOrder = "#dbd1b4 0 7%,#c2b280";
+
         if (previousDirection === "up") {
+          stripeOrder = "#dbd1b4 0 5%, #c2b280";
           borderRadius = "300px 0 0 0";
           borderPos = "100% 100%";
         } else if (previousDirection === "down") {
+          stripeOrder = "#c2b280 0 5%, #dbd1b4";
           borderRadius = "0 0 0 300px";
           borderPos = "100% 0";
         } else {
           angle = "0deg";
         }
-        direction = "right";
       } else if (dx === 0 && dy === -1) {
+        // LEFT
+        direction = "left";
+        stripeOrder = "#c2b280 0 7%,#dbd1b4";
+
         if (previousDirection === "up") {
+          stripeOrder = "#c2b280 0 5%, #dbd1b4";
           borderRadius = "0 300px 0 0";
           borderPos = "0 100%";
         } else if (previousDirection === "down") {
+          stripeOrder = "#dbd1b4 0 5%, #c2b280";
           borderRadius = "0 0 300px 0";
           borderPos = "0 0";
         } else {
           angle = "0deg";
         }
-        direction = "left";
       } else {
         // console.log(
         //   `Square (${x}, ${y}) is not adjacent to the previous square.`
@@ -108,9 +130,10 @@ const Grid: React.FC = () => {
       }
 
       // style previous tiles
+
       const previousTileStyle = borderRadius
-        ? `border-radius: ${borderRadius}; background: repeating-radial-gradient(ellipse farthest-corner at ${borderPos}, #dbd1b4 0 5%, #c2b280 5% 10%);`
-        : `background: repeating-linear-gradient(${angle},#dbd1b4 0 7%,#c2b280 7% 14%)`;
+        ? `border-radius: ${borderRadius}; background: repeating-radial-gradient(ellipse farthest-corner at ${borderPos}, ${stripeOrder} 5% 10%);`
+        : `background: repeating-linear-gradient(${angle},${stripeOrder} 7% 14%)`;
       // const myClass = `.color-${currentColor} { border-radius: 0 0 0 300px; background: repeating-radial-gradient(ellipse farthest-corner at 100% 0, #dbd1b4 0 5%, #c2b280 5% 10%); }`; // define your CSS class as a string
       const previousTile = `.color-${currentColor - 1} { ${previousTileStyle}}`;
       styleSheet.insertRule(previousTile); // insert the CSS class into the stylesheet
