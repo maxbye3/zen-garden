@@ -155,18 +155,32 @@ const Grid: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="lock-screen">
       <div className="grid-container">
+        set: {test}
+        <p>Number of squares: {numUnrock1Squares}</p>
         <div
           className="grid-wrapper"
           onTouchMove={(event) => {
-            var x = event.touches[0].clientX;
-            var y = event.touches[0].clientY;
+            var element = document.querySelector(
+              ".grid-wrapper"
+            ) as HTMLElement;
+            var width = element.offsetWidth;
+            // console.log(element.offsetTop);
+            var height = element.offsetHeight;
+            console.log("Height of grid wrapper:", height);
+            // console.log("Height of grid wrapper:", height);
+            // console.log("Wrapper touch:", event.touches[0].clientY);
+            var x = (event.touches[0].clientX / width) * 10;
+            // var y = (event.touches[0].clientY / height) * 10;
+            var y =
+              ((event.touches[0].clientY - element.offsetTop) / height) * 10 -
+              0.2;
+            console.log("Wrapper touch:", event.touches[0]);
+
             setTest(x + ", " + y);
           }}
         >
-          set: {test}
-          <p>Number of squares: {numUnrock1Squares}</p>
           {grid.map((row, x) => (
             <div key={x} className="grid-row">
               {row.map((col, y) => (

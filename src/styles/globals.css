@@ -1,3 +1,12 @@
+/* Stop scrolling */
+body {
+  height: 100%;
+  overflow: hidden;
+  width: 100%;
+  position: fixed;
+}
+/* Stop scrolling */
+
 .grid-container {
   display: flex;
   flex-direction: column;
@@ -12,8 +21,7 @@
 .grid-square {
   width: 9vw;
   height: 9vw;
-  border: .5px solid #ccc;
-
+  border: 0.5px solid #ccc;
 }
 
 .grid-container {
@@ -21,18 +29,13 @@
   justify-content: center;
   align-items: center;
   height: 90vh;
-
-}
-
-.filled-square {
-  /* background: purple; */
 }
 
 /* .rock-1 {
   background: url(src/pages/image/moss-rock.png);
 } */
 
-.mossRock{
+.mossRock {
   position: absolute;
   right: 10vw;
   margin-top: -5vh;
@@ -41,7 +44,7 @@
   z-index: 0;
 }
 
-.spiritHouse{
+.spiritHouse {
   position: absolute;
   right: 10vw;
   margin-top: -5vh;
@@ -49,7 +52,7 @@
   height: 14vh;
   z-index: 0;
 }
-.catLuck{
+.catLuck {
   position: absolute;
   left: 0vw;
   margin-top: 0vh;
@@ -57,4 +60,3 @@
   height: 10vh;
   z-index: 0;
 }
-
