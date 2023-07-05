@@ -16,6 +16,8 @@ body {
 
 .grid-row {
   display: flex;
+  background: url("./sand.png") repeat;
+  background-size: 20px 20px;
 }
 
 .grid-square {
