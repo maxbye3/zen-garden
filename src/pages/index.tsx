@@ -26,7 +26,6 @@ const Grid: React.FC = () => {
   const rock3Y = [7, 8];
 
   const handleSquareClick = (x: number, y: number): void => {
-    setTest(`${String(x)} ${String(y)}`);
     let stripeOrder;
     if (rock1X.includes(x) && rock1Y.includes(y)) {
       return;
@@ -34,21 +33,27 @@ const Grid: React.FC = () => {
     if (rock2X.includes(x) && rock2Y.includes(y)) {
       return;
     }
+    if (rock3X.includes(x) && rock3Y.includes(y)) {
+      return;
+    }
     const styleSheet = document.styleSheets[0]; // get the first stylesheet in the document
     // onhover cover tile
     const currentTile = `.color-${currentColor} { background-color: purple}`;
     styleSheet.insertRule(currentTile); // insert the CSS class into the stylesheet
 
-    if (grid[x][y] !== 0) {
-      // console.log(`Square (${x}, ${y}) is already rock1.`);
+    if (!grid[x] || grid[x][y] !== 0) {
       return;
     }
 
     if (prevX === null || prevY === null) {
-      // console.log(`Square (${x}, ${y}) is the first rock1 square.`);
-      const newGrid = grid.map((row, i) =>
-        row.map((col, j) => (i === x && j === y ? currentColor : col))
-      );
+      console.log(`Square (${x}, ${y}) is the first rock1 square.`);
+      // force the first square to either be 0 or 9
+      x = x >= 5 ? 9 : 0;
+
+      const newGrid = grid.map((row, i) => {
+        console.log(x);
+        return row.map((col, j) => (i === x && j === y ? currentColor : col));
+      });
       setGrid(newGrid);
       setCurrentColor(currentColor + 1);
       setPrevX(x);
@@ -166,19 +171,15 @@ const Grid: React.FC = () => {
               ".grid-wrapper"
             ) as HTMLElement;
             var width = element.offsetWidth;
-            // console.log(element.offsetTop);
             var height = element.offsetHeight;
-            console.log("Height of grid wrapper:", height);
-            // console.log("Height of grid wrapper:", height);
-            // console.log("Wrapper touch:", event.touches[0].clientY);
-            var x = (event.touches[0].clientX / width) * 10;
-            // var y = (event.touches[0].clientY / height) * 10;
+            var x = Math.round((event.touches[0].clientX / width) * 10) - 1;
             var y =
-              ((event.touches[0].clientY - element.offsetTop) / height) * 10 -
-              0.2;
-            console.log("Wrapper touch:", event.touches[0]);
+              Math.round(
+                ((event.touches[0].clientY - element.offsetTop) / height) * 10
+              ) - 1;
 
-            setTest(x + ", " + y);
+            setTest(y + ", " + x);
+            handleSquareClick(y, x);
           }}
         >
           {grid.map((row, x) => (
@@ -209,7 +210,9 @@ const Grid: React.FC = () => {
 
                   <div
                     key={`${x}-${y}`}
+                    // onPointerMove={() => handleSquareClick(x, y)}
                     className={`grid-square color-${col} 
+                    
                   ${
                     rock1X.includes(x) && rock1Y.includes(y)
                       ? "filled-square"
@@ -225,7 +228,6 @@ const Grid: React.FC = () => {
                         ? "filled-square"
                         : ""
                     }
-                    
                     `}
                   />
                 </>
