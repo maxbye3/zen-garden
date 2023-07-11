@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import styles from './styles.module.css';
 
-export const ToggleGrid: React.FC = () => {
+const ToggleGrid: React.FC = () => {
   const [isGrid, setGrid] = useState<boolean>(false);
   return (
    <button className={styles.button} onClick={() => {
@@ -23,3 +23,4 @@ export const ToggleGrid: React.FC = () => {
   );
 };
 
+export default ToggleGrid

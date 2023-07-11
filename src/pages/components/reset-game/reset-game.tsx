@@ -5,10 +5,12 @@ interface ResetGameProps {
   reset: () => void;
 }
 
-export const ResetGame: React.FC<ResetGameProps> = ({ reset }) => {
+const ResetGame: React.FC<ResetGameProps> = ({ reset }) => {
   return (
     <button className={styles.button} onClick={reset}>
       Reset Game
     </button>
   );
 };
+
+export default ResetGame
