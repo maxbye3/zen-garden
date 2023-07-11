@@ -3,6 +3,8 @@ import Image from "next/image";
 import mossRock from "./image/moss-rock.png";
 import spiritHouse from "./image/spirit-house.png";
 import catLuck from "./image/cat.png";
+import { ToggleGrid } from "./components/toggle-grid/toggle-grid";
+import { ResetGame } from "./components/reset-game/reset-game";
 
 const Grid: React.FC = () => {
   const [grid, setGrid] = useState<number[][]>(
@@ -159,84 +161,88 @@ const Grid: React.FC = () => {
     }
   };
 
+  const handleReset = () => {
+    // Reset logic here
+    console.log('reset')
+  };
+
   return (
-    <div className="lock-screen">
-      <div className="grid-container">
-        set: {test}
-        <p>Number of squares: {numUnrock1Squares}</p>
-        <div
-          className="grid-wrapper"
-          onTouchMove={(event) => {
-            var element = document.querySelector(
-              ".grid-wrapper"
-            ) as HTMLElement;
-            var width = element.offsetWidth;
-            var height = element.offsetHeight;
-            var x = Math.round((event.touches[0].clientX / width) * 10) - 1;
-            var y =
-              Math.round(
-                ((event.touches[0].clientY - element.offsetTop) / height) * 10
-              ) - 1;
+    <>
+    <ToggleGrid></ToggleGrid>
+    <div className="grid-container">
+      set: {test}
+      <p>Number of squares: {numUnrock1Squares}</p>
+      <div
+        className="grid-wrapper"
+        onTouchMove={(event) => {
+          var element = document.querySelector(
+            ".grid-wrapper"
+          ) as HTMLElement;
+          var width = element.offsetWidth;
+          var height = element.offsetHeight;
+          var x = Math.round((event.touches[0].clientX / width) * 10) - 1;
+          var y =
+            Math.round(
+              ((event.touches[0].clientY - element.offsetTop) / height) * 10
+            ) - 1;
 
-            setTest(y + ", " + x);
-            handleSquareClick(y, x);
-          }}
-        >
-          {grid.map((row, x) => (
-            <div key={x} className="grid-row">
-              {row.map((col, y) => (
-                <>
-                  {rock3X[1] === x && rock3Y[1] === y && (
-                    <Image
-                      src={catLuck}
-                      className="catLuck"
-                      alt="lucky cat statue"
-                    />
-                  )}
-                  {rock1X[1] === x && rock1Y[1] === y && (
-                    <Image
-                      src={spiritHouse}
-                      className="spiritHouse"
-                      alt="spirit house"
-                    />
-                  )}
-                  {rock2X[0] === x && rock2Y[0] === y && (
-                    <Image
-                      src={mossRock}
-                      className="mossRock"
-                      alt="rock with moss on"
-                    />
-                  )}
+          setTest(y + ", " + x);
+          handleSquareClick(y, x);
+        }}
+      >
+        {grid.map((row, x) => (
+          <div key={x} className="grid-row">
+            {row.map((col, y) => (
+              <>
+                {rock3X[1] === x && rock3Y[1] === y && (
+                  <Image
+                    src={catLuck}
+                    className="catLuck"
+                    alt="lucky cat statue"
+                  />
+                )}
+                {rock1X[1] === x && rock1Y[1] === y && (
+                  <Image
+                    src={spiritHouse}
+                    className="spiritHouse"
+                    alt="spirit house"
+                  />
+                )}
+                {rock2X[0] === x && rock2Y[0] === y && (
+                  <Image
+                    src={mossRock}
+                    className="mossRock"
+                    alt="rock with moss on"
+                  />
+                )}
 
-                  <div
-                    key={`${x}-${y}`}
-                    // onPointerMove={() => handleSquareClick(x, y)}
-                    className={`grid-square color-${col} 
+                <div
+                  key={`${x}-${y}`}
+                  // onPointerMove={() => handleSquareClick(x, y)}
+                  className={`grid-square color-${col} 
                     
-                  ${
-                    rock1X.includes(x) && rock1Y.includes(y)
+                  ${rock1X.includes(x) && rock1Y.includes(y)
                       ? "filled-square"
                       : ""
-                  }
-                    ${
-                      rock2X.includes(x) && rock2Y.includes(y)
-                        ? "filled-square"
-                        : ""
                     }
-                    ${
-                      rock3X.includes(x) && rock3Y.includes(y)
-                        ? "filled-square"
-                        : ""
+                    ${rock2X.includes(x) && rock2Y.includes(y)
+                      ? "filled-square"
+                      : ""
+                    }
+                    ${rock3X.includes(x) && rock3Y.includes(y)
+                      ? "filled-square"
+                      : ""
                     }
                     `}
-                  />
-                </>
-              ))}
-            </div>
-          ))}
-        </div>
+                />
+              </>
+            ))}
+          </div>
+        ))}
       </div>
+      <ResetGame reset={handleReset}></ResetGame>
     </div>
+    </>
   );
 };
 

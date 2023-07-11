@@ -4,6 +4,7 @@ body {
   overflow: hidden;
   width: 100%;
   position: fixed;
+  margin: 0;
 }
 /* Stop scrolling */
 
@@ -23,7 +24,6 @@ body {
 .grid-square {
   width: 9vw;
   height: 9vw;
-  border: 0.5px solid #ccc;
 }
 
 .grid-container {
@@ -39,7 +39,7 @@ body {
 
 .mossRock {
   position: absolute;
-  right: 10vw;
+  right: 13vw;
   margin-top: -5vh;
   width: 20vw;
   height: 10vh;
@@ -48,16 +48,17 @@ body {
 
 .spiritHouse {
   position: absolute;
-  right: 10vw;
-  margin-top: -5vh;
+  right: 11vw;
+  margin-top: -4.5vh;
   width: 20vw;
-  height: 14vh;
+  height: 13vh;
   z-index: 0;
 }
+
 .catLuck {
   position: absolute;
-  left: 0vw;
-  margin-top: 0vh;
+  left: 4vw;
+  margin-top: -1.5vh;
   width: 20vw;
   height: 10vh;
   z-index: 0;
