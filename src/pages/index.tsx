@@ -3,8 +3,8 @@ import Image from "next/image";
 import mossRock from "./image/moss-rock.png";
 import spiritHouse from "./image/spirit-house.png";
 import catLuck from "./image/cat.png";
-import { ToggleGrid } from "./components/toggle-grid/toggle-grid";
-import { ResetGame } from "./components/reset-game/reset-game";
+import ToggleGrid from "../components/toggle-grid/toggle-grid";
+import ResetGame from "../components/reset-game/reset-game";
 
 const Grid: React.FC = () => {
   const [grid, setGrid] = useState<number[][]>(
