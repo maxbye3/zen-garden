@@ -5,20 +5,19 @@ import spiritHouse from "./image/spirit-house.png";
 import catLuck from "./image/cat.png";
 import ToggleGrid from "../components/toggle-grid/toggle-grid";
 import ResetGame from "../components/reset-game/reset-game";
+import ConfettiWin from "../components/confetti/confetti";
 
 const Grid: React.FC = () => {
   const [grid, setGrid] = useState<number[][]>(
     Array(10).fill(Array(10).fill(0))
   );
+  const toWin = 86;
   const [currentColor, setCurrentColor] = useState<number>(1);
   const [test, setTest] = useState<string>("");
   const [prevX, setPrevX] = useState<number | null>(null);
   const [prevY, setPrevY] = useState<number | null>(null);
   const [previousDirection, setPreviousDirection] = useState("");
-  const numUnrock1Squares = grid.reduce(
-    (acc, row) => acc + row.filter((col) => col === 0).length,
-    0
-  );
+  const winner = () => 1 + toWin - currentColor
 
   const rock1X = [6, 7, 8];
   const rock1Y = [7, 8];
@@ -53,11 +52,11 @@ const Grid: React.FC = () => {
       x = x >= 5 ? 9 : 0;
 
       const newGrid = grid.map((row, i) => {
-        console.log(x);
         return row.map((col, j) => (i === x && j === y ? currentColor : col));
       });
       setGrid(newGrid);
       setCurrentColor(currentColor + 1);
+
       setPrevX(x);
       setPrevY(y);
     } else {
@@ -166,12 +165,17 @@ const Grid: React.FC = () => {
     console.log('reset')
   };
 
+  
+
   return (
     <>
+    {winner() === 0 && 
+    <ConfettiWin></ConfettiWin>
+    }
     <ToggleGrid></ToggleGrid>
     <div className="grid-container">
       set: {test}
-      <p>Number of squares: {numUnrock1Squares}</p>
+      <p>Number of squares: { winner() }</p>
       <div
         className="grid-wrapper"
         onTouchMove={(event) => {
@@ -193,7 +197,7 @@ const Grid: React.FC = () => {
         {grid.map((row, x) => (
           <div key={x} className="grid-row">
             {row.map((col, y) => (
-              <>
+              <div key={y}>
                 {rock3X[1] === x && rock3Y[1] === y && (
                   <Image
                     src={catLuck}
@@ -216,8 +220,7 @@ const Grid: React.FC = () => {
                   />
                 )}
 
-                <div
-                  key={`${x}-${y}`}
+                <div                  
                   // onPointerMove={() => handleSquareClick(x, y)}
                   className={`grid-square color-${col} 
                     
@@ -235,7 +238,7 @@ const Grid: React.FC = () => {
                     }
                     `}
                 />
-              </>
+              </div>
             ))}
           </div>
         ))}
