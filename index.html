@@ -156,6 +156,29 @@
         gap: 8px;
       }
 
+      .aim {
+        position: absolute;
+        z-index: 2;
+        top: 66px;
+        left: 18px;
+        right: 18px;
+        min-height: 40px;
+        display: grid;
+        place-items: center;
+        padding: 8px 12px;
+        border: 1px solid rgba(92, 76, 54, 0.16);
+        border-radius: 8px;
+        background: rgba(255, 251, 238, 0.58);
+        color: #46382a;
+        font-size: 0.82rem;
+        font-weight: 760;
+        line-height: 1.25;
+        text-align: center;
+        box-shadow: 0 3px 10px rgba(35, 29, 20, 0.08);
+        backdrop-filter: blur(2px);
+        pointer-events: none;
+      }
+
       button {
         min-height: 44px;
         border: 1px solid rgba(80, 70, 54, 0.2);
@@ -203,6 +226,7 @@
             <button id="resetButton" type="button">Reset</button>
             <button id="hintButton" type="button">Hint</button>
           </div>
+          <div class="aim">Aim of the game is: drag your finger in the sand. Fill up all the available spaces to win.</div>
           <div class="message" id="message">Rake every open tile.</div>
         </div>
       </section>
@@ -281,8 +305,10 @@
       let animationTime = 0;
       let hintMove = null;
       let hintTimer = 0;
+      let hintsLeft = 3;
       let pondW = 0;
       let pondH = 0;
+      const ripples = [];
       const koi = [
         { x: 0.07, y: 0.34, angle: 0.2, targetAngle: 0.2, nextTurn: 0, speed: 18, phase: 0.2, alpha: 0.7, spot: "#ff5a1d", fin: "#c9b7af" },
         { x: 0.18, y: 0.88, angle: -0.35, targetAngle: -0.35, nextTurn: 0, speed: 15, phase: 1.9, alpha: 0.62, spot: "#e24a18", fin: "#bba8a1" },
@@ -376,6 +402,58 @@
         fish.nextTurn = time + 1800 + Math.random() * 2600;
       }
 
+      function drawRipples(time) {
+        for (let i = ripples.length - 1; i >= 0; i -= 1) {
+          const ripple = ripples[i];
+          const age = time - ripple.start;
+          if (age > 1200) {
+            ripples.splice(i, 1);
+            continue;
+          }
+
+          const progress = age / 1200;
+          pondCtx.save();
+          pondCtx.globalAlpha = (1 - progress) * 0.46;
+          pondCtx.strokeStyle = "#d2f0f4";
+          pondCtx.lineWidth = Math.max(2, pondW / 360) * (1 - progress * 0.35);
+          for (let ring = 0; ring < 3; ring += 1) {
+            pondCtx.beginPath();
+            pondCtx.arc(
+              ripple.x * pondW,
+              ripple.y * pondH,
+              (18 + ring * 18 + progress * 82) * (pondW / 430),
+              0,
+              Math.PI * 2,
+            );
+            pondCtx.stroke();
+          }
+          pondCtx.restore();
+        }
+      }
+
+      function callKoiTo(clientX, clientY) {
+        const rect = pondCanvas.getBoundingClientRect();
+        const x = (clientX - rect.left) / rect.width;
+        const y = (clientY - rect.top) / rect.height;
+        const target = {
+          x: Math.max(0.02, Math.min(0.98, x)),
+          y: Math.max(0.02, Math.min(0.98, y)),
+        };
+
+        ripples.push({ ...target, start: animationTime || performance.now() });
+        if (ripples.length > 6) ripples.shift();
+
+        for (const fish of koi) {
+          fish.targetX = target.x;
+          fish.targetY = target.y;
+          fish.rushUntil = (animationTime || performance.now()) + 2400;
+          const dx = target.x - fish.x;
+          const dy = target.y - fish.y;
+          fish.targetAngle = Math.atan2(dx, -dy);
+          fish.nextTurn = fish.rushUntil + Math.random() * 900;
+        }
+      }
+
       function drawPond(timestamp) {
         resizePond();
         const time = timestamp || 0;
@@ -407,15 +485,28 @@
         pondCtx.fillStyle = "rgba(7, 31, 48, 0.1)";
         pondCtx.fillRect(0, 0, pondW, pondH);
 
+        drawRipples(time);
+
         for (const fish of koi) {
-          if (time > fish.nextTurn) chooseKoiHeading(fish, time);
+          const isRushing = time < (fish.rushUntil || 0) && typeof fish.targetX === "number";
+          if (isRushing) {
+            const dx = fish.targetX - fish.x;
+            const dy = fish.targetY - fish.y;
+            fish.targetAngle = Math.atan2(dx, -dy);
+            if (Math.hypot(dx, dy) < 0.035) fish.rushUntil = 0;
+          } else if (time > fish.nextTurn) {
+            chooseKoiHeading(fish, time);
+          }
+
           const margin = 0.08;
           const outside = fish.x < margin || fish.x > 1 - margin || fish.y < margin || fish.y > 1 - margin;
-          if (outside) chooseKoiHeading(fish, time, true);
+          if (outside && !isRushing) chooseKoiHeading(fish, time, true);
 
-          fish.angle += angleDelta(fish.angle, fish.targetAngle) * Math.min(1, dt * 1.4);
-          fish.x += Math.sin(fish.angle) * fish.speed * dt / pondW;
-          fish.y -= Math.cos(fish.angle) * fish.speed * dt / pondH;
+          const turnRate = isRushing ? 3.6 : 1.4;
+          const speed = fish.speed * (isRushing ? 3.2 : 1);
+          fish.angle += angleDelta(fish.angle, fish.targetAngle) * Math.min(1, dt * turnRate);
+          fish.x += Math.sin(fish.angle) * speed * dt / pondW;
+          fish.y -= Math.cos(fish.angle) * speed * dt / pondH;
 
           if (fish.x < -0.12) fish.x = 1.12;
           else if (fish.x > 1.12) fish.x = -0.12;
@@ -437,8 +528,10 @@
         dragPoint = null;
         activeStroke = [];
         hintMove = null;
+        hintsLeft = 3;
         rakeVisible = true;
         levelLabel.textContent = level.name;
+        updateHintCounter();
         showMessage("Tap the rake to begin.");
         draw();
       }
@@ -496,7 +589,7 @@
         if (!cells) return { ok: false, text: "No diagonal raking." };
         for (const tile of cells) {
           const id = key(tile.x, tile.y);
-          if (obstacles.has(id)) return { ok: false, text: "Stones block the rake." };
+          if (obstacles.has(id)) return { ok: false, text: "Something is blocking the rake." };
           if (raked.has(id)) return { ok: false, text: "Do not cross raked sand." };
         }
         return { ok: true, cells };
@@ -543,6 +636,16 @@
         message.classList.add("show");
         window.clearTimeout(noticeTimer);
         noticeTimer = window.setTimeout(() => message.classList.remove("show"), 1700);
+      }
+
+      function hintsLeftText() {
+        if (hintsLeft === 2) return "two hints left.";
+        if (hintsLeft === 1) return "one hint left.";
+        return "no hints left.";
+      }
+
+      function updateHintCounter() {
+        hintButton.textContent = `Hint (${hintsLeft})`;
       }
 
       function inBounds(tile) {
@@ -651,6 +754,10 @@
           showMessage("Tap the rake to begin.");
           return;
         }
+        if (hintsLeft <= 0) {
+          showMessage("No hints left.");
+          return;
+        }
 
         const hint = findHintDirection();
         window.clearTimeout(hintTimer);
@@ -678,7 +785,9 @@
           from: { ...current },
           to: { x: current.x + hint.direction.x, y: current.y + hint.direction.y },
         };
-        showMessage(`Best direction: ${hint.direction.label}.`);
+        hintsLeft -= 1;
+        updateHintCounter();
+        showMessage(`Best direction: ${hint.direction.label}. ${hintsLeftText()}`);
         draw();
         hintTimer = window.setTimeout(() => {
           hintMove = null;
@@ -1221,6 +1330,10 @@
         if (path.length === 0) rakeVisible = true;
         showMessage("Last rake stroke undone.");
         draw();
+      });
+      window.addEventListener("pointerdown", (event) => {
+        if (event.target.closest?.(".stage")) return;
+        callKoiTo(event.clientX, event.clientY);
       });
 
       window.addEventListener("resize", () => {
