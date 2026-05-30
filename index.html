@@ -2,31 +2,597 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zen Garden</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Zen Puzzle Garden</title>
     <style>
       :root {
-        color-scheme: light dark;
-        font-family: Arial, Helvetica, sans-serif;
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #17221d;
+        color: #f8f4e8;
+      }
+
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
       }
 
       body {
         margin: 0;
-        min-height: 100vh;
+        min-height: 100svh;
+        overflow: hidden;
+        background:
+          linear-gradient(180deg, rgba(23, 34, 29, 0.78), rgba(23, 34, 29, 0.48)),
+          repeating-linear-gradient(90deg, #75503a 0 36px, #68442f 36px 40px),
+          #67452f;
+        touch-action: none;
+      }
+
+      .app {
+        min-height: 100svh;
         display: grid;
-        place-items: center;
-        background: #f4f7f2;
-        color: #1f2a22;
+        grid-template-rows: auto 1fr auto;
+        gap: 10px;
+        padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+      }
+
+      .topbar,
+      .footer {
+        width: min(100%, 440px);
+        margin: 0 auto;
+      }
+
+      .topbar {
+        display: grid;
+        gap: 8px;
+      }
+
+      .title-row {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 12px;
       }
 
       h1 {
-        font-size: clamp(2.5rem, 8vw, 6rem);
-        font-weight: 700;
         margin: 0;
+        font-size: 1.55rem;
+        line-height: 1;
+        font-weight: 800;
+      }
+
+      .level {
+        color: #e7d5a8;
+        font-size: 0.82rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .meter {
+        height: 10px;
+        overflow: hidden;
+        border: 1px solid rgba(248, 244, 232, 0.26);
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.22);
+      }
+
+      .meter span {
+        display: block;
+        height: 100%;
+        width: 0%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #d7aa55, #ece3c5);
+        transition: width 160ms ease;
+      }
+
+      .board-wrap {
+        display: grid;
+        place-items: center;
+        min-height: 0;
+      }
+
+      .stage {
+        width: min(100%, 430px);
+        aspect-ratio: 10 / 14;
+        position: relative;
+        border: 2px solid #90633f;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+        background: #d8cfbd;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+        user-select: none;
+      }
+
+      .message {
+        position: absolute;
+        inset: auto 12px 12px;
+        min-height: 42px;
+        display: grid;
+        place-items: center;
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: rgba(28, 31, 25, 0.76);
+        color: #fff8e8;
+        font-size: 0.92rem;
+        font-weight: 700;
+        text-align: center;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(8px);
+        transition:
+          opacity 140ms ease,
+          transform 140ms ease;
+      }
+
+      .message.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .footer {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+
+      button {
+        min-height: 44px;
+        border: 1px solid rgba(248, 244, 232, 0.28);
+        border-radius: 8px;
+        background: rgba(248, 244, 232, 0.12);
+        color: #fff8e8;
+        font: inherit;
+        font-size: 0.95rem;
+        font-weight: 800;
+      }
+
+      button:active {
+        transform: translateY(1px);
+        background: rgba(248, 244, 232, 0.2);
       }
     </style>
   </head>
   <body>
-    <h1>Hello, world!</h1>
+    <main class="app">
+      <header class="topbar">
+        <div class="title-row">
+          <h1>Zen Puzzle Garden</h1>
+          <div class="level" id="levelLabel">Garden 1</div>
+        </div>
+        <div class="meter" aria-label="raked sand progress"><span id="progressBar"></span></div>
+      </header>
+
+      <section class="board-wrap" aria-label="sand garden puzzle">
+        <div class="stage">
+          <canvas id="garden" width="900" height="1260"></canvas>
+          <div class="message" id="message">Rake every open tile.</div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <button id="undoButton" type="button">Undo</button>
+        <button id="resetButton" type="button">Reset</button>
+        <button id="nextButton" type="button">Next</button>
+      </footer>
+    </main>
+
+    <script>
+      const canvas = document.querySelector("#garden");
+      const ctx = canvas.getContext("2d");
+      const message = document.querySelector("#message");
+      const progressBar = document.querySelector("#progressBar");
+      const levelLabel = document.querySelector("#levelLabel");
+      const resetButton = document.querySelector("#resetButton");
+      const undoButton = document.querySelector("#undoButton");
+      const nextButton = document.querySelector("#nextButton");
+
+      const levels = [
+        {
+          name: "Garden 1",
+          size: 7,
+          start: [0, 6],
+          stones: [
+            [1, 1, "rock"],
+            [3, 1, "lantern"],
+            [5, 1, "rock"],
+            [2, 3, "rock"],
+            [4, 3, "lantern"],
+            [1, 5, "lantern"],
+            [5, 5, "rock"],
+          ],
+        },
+        {
+          name: "Garden 2",
+          size: 8,
+          start: [7, 7],
+          stones: [
+            [1, 1, "rock"],
+            [3, 1, "lantern"],
+            [6, 1, "rock"],
+            [2, 3, "lantern"],
+            [5, 3, "rock"],
+            [1, 5, "rock"],
+            [4, 5, "lantern"],
+            [6, 6, "rock"],
+          ],
+        },
+        {
+          name: "Garden 3",
+          size: 8,
+          start: [0, 0],
+          stones: [
+            [2, 0, "rock"],
+            [5, 1, "lantern"],
+            [1, 2, "lantern"],
+            [4, 3, "rock"],
+            [7, 3, "rock"],
+            [2, 5, "rock"],
+            [5, 6, "lantern"],
+          ],
+        },
+      ];
+
+      let levelIndex = 0;
+      let level;
+      let cell;
+      let boardLeft;
+      let boardTop;
+      let raked;
+      let obstacles;
+      let path;
+      let current;
+      let dragStart = null;
+      let dragPoint = null;
+      let noticeTimer = 0;
+
+      function key(x, y) {
+        return `${x},${y}`;
+      }
+
+      function setupLevel(index) {
+        levelIndex = (index + levels.length) % levels.length;
+        level = levels[levelIndex];
+        raked = new Set();
+        obstacles = new Map(level.stones.map(([x, y, type]) => [key(x, y), type]));
+        path = [];
+        current = { x: level.start[0], y: level.start[1] };
+        raked.add(key(current.x, current.y));
+        dragStart = null;
+        dragPoint = null;
+        levelLabel.textContent = level.name;
+        showMessage("Drag from the rake in one straight line.");
+        draw();
+      }
+
+      function boardMetrics() {
+        const pad = canvas.width * 0.075;
+        const topBand = canvas.height * 0.16;
+        const usable = canvas.width - pad * 2;
+        cell = usable / level.size;
+        boardLeft = pad;
+        boardTop = topBand + (canvas.height - topBand - usable) * 0.5;
+      }
+
+      function tileAtCanvasPoint(px, py) {
+        const x = Math.floor((px - boardLeft) / cell);
+        const y = Math.floor((py - boardTop) / cell);
+        if (x < 0 || y < 0 || x >= level.size || y >= level.size) return null;
+        return { x, y };
+      }
+
+      function canvasPoint(event) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: ((event.clientX - rect.left) / rect.width) * canvas.width,
+          y: ((event.clientY - rect.top) / rect.height) * canvas.height,
+        };
+      }
+
+      function tileCenter(tile) {
+        return {
+          x: boardLeft + tile.x * cell + cell / 2,
+          y: boardTop + tile.y * cell + cell / 2,
+        };
+      }
+
+      function segmentCells(from, to) {
+        if (from.x !== to.x && from.y !== to.y) return null;
+        if (from.x === to.x && from.y === to.y) return null;
+        const dx = Math.sign(to.x - from.x);
+        const dy = Math.sign(to.y - from.y);
+        const cells = [];
+        let x = from.x + dx;
+        let y = from.y + dy;
+        while (x !== to.x || y !== to.y) {
+          cells.push({ x, y });
+          x += dx;
+          y += dy;
+        }
+        cells.push({ x: to.x, y: to.y });
+        return cells;
+      }
+
+      function validateMove(to) {
+        const cells = segmentCells(current, to);
+        if (!cells) return { ok: false, text: "Keep the rake moving straight." };
+        for (const tile of cells) {
+          const id = key(tile.x, tile.y);
+          if (obstacles.has(id)) return { ok: false, text: "Stones block the rake." };
+          if (raked.has(id)) return { ok: false, text: "Do not cross raked sand." };
+        }
+        return { ok: true, cells };
+      }
+
+      function commitMove(to) {
+        const result = validateMove(to);
+        if (!result.ok) {
+          showMessage(result.text);
+          return;
+        }
+        result.cells.forEach((tile) => raked.add(key(tile.x, tile.y)));
+        path.push({ from: { ...current }, to: { ...to }, cells: result.cells });
+        current = { ...to };
+        dragStart = null;
+        dragPoint = null;
+        if (isComplete()) {
+          showMessage("Garden complete. The sand is fully raked.");
+        }
+        draw();
+      }
+
+      function isComplete() {
+        return raked.size === level.size * level.size - obstacles.size;
+      }
+
+      function progress() {
+        const total = level.size * level.size - obstacles.size;
+        return Math.round((raked.size / total) * 100);
+      }
+
+      function showMessage(text) {
+        message.textContent = text;
+        message.classList.add("show");
+        window.clearTimeout(noticeTimer);
+        noticeTimer = window.setTimeout(() => message.classList.remove("show"), 1700);
+      }
+
+      function drawBackground() {
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.fillStyle = "#6b4934";
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = "#ad6a3f";
+        ctx.fillRect(0, 0, w, h * 0.15);
+        ctx.fillStyle = "#2e332f";
+        for (let x = -20; x < w + 40; x += 42) {
+          ctx.beginPath();
+          ctx.arc(x, 0, 28, 0, Math.PI);
+          ctx.fill();
+        }
+
+        ctx.fillStyle = "#7b5239";
+        for (let y = h * 0.16; y < h; y += 42) {
+          for (let x = (Math.floor(y) % 84) - 42; x < w; x += 84) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + 46, y + 10);
+            ctx.lineTo(x + 36, y + 36);
+            ctx.lineTo(x - 10, y + 28);
+            ctx.closePath();
+            ctx.strokeStyle = "rgba(42, 28, 20, 0.24)";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+        }
+      }
+
+      function drawBoard() {
+        const size = cell * level.size;
+        ctx.fillStyle = "#d8cfbd";
+        ctx.fillRect(boardLeft, boardTop, size, size);
+        ctx.strokeStyle = "#8e775b";
+        ctx.lineWidth = 6;
+        ctx.strokeRect(boardLeft, boardTop, size, size);
+
+        ctx.strokeStyle = "rgba(129, 114, 92, 0.18)";
+        ctx.lineWidth = 1;
+        for (let i = 1; i < level.size; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(boardLeft + i * cell, boardTop);
+          ctx.lineTo(boardLeft + i * cell, boardTop + size);
+          ctx.moveTo(boardLeft, boardTop + i * cell);
+          ctx.lineTo(boardLeft + size, boardTop + i * cell);
+          ctx.stroke();
+        }
+      }
+
+      function drawRakeLines() {
+        ctx.save();
+        ctx.strokeStyle = "rgba(126, 108, 84, 0.46)";
+        ctx.lineCap = "round";
+        ctx.lineWidth = Math.max(4, cell * 0.08);
+        ctx.setLineDash([]);
+
+        for (const tileId of raked) {
+          const [x, y] = tileId.split(",").map(Number);
+          const cx = boardLeft + x * cell + cell / 2;
+          const cy = boardTop + y * cell + cell / 2;
+          for (let offset = -0.25; offset <= 0.25; offset += 0.25) {
+            ctx.beginPath();
+            ctx.moveTo(cx - cell * 0.32, cy + offset * cell);
+            ctx.lineTo(cx + cell * 0.32, cy + offset * cell);
+            ctx.stroke();
+          }
+        }
+
+        ctx.strokeStyle = "#a66b42";
+        ctx.lineWidth = Math.max(7, cell * 0.12);
+        for (const move of path) {
+          const start = tileCenter(move.from);
+          const end = tileCenter(move.to);
+          ctx.beginPath();
+          ctx.moveTo(start.x, start.y);
+          ctx.lineTo(end.x, end.y);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawPreview() {
+        if (!dragStart || !dragPoint) return;
+        const hover = tileAtCanvasPoint(dragPoint.x, dragPoint.y);
+        if (!hover) return;
+        const straight =
+          Math.abs(hover.x - current.x) > Math.abs(hover.y - current.y)
+            ? { x: hover.x, y: current.y }
+            : { x: current.x, y: hover.y };
+        const result = validateMove(straight);
+        const start = tileCenter(current);
+        const end = tileCenter(straight);
+        ctx.save();
+        ctx.strokeStyle = result.ok ? "rgba(53, 96, 68, 0.8)" : "rgba(166, 50, 35, 0.78)";
+        ctx.lineWidth = Math.max(8, cell * 0.14);
+        ctx.lineCap = "round";
+        ctx.setLineDash([14, 12]);
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawRock(x, y) {
+        const cx = boardLeft + x * cell + cell / 2;
+        const cy = boardTop + y * cell + cell / 2;
+        ctx.fillStyle = "#646866";
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + cell * 0.06, cell * 0.32, cell * 0.2, -0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#828685";
+        ctx.beginPath();
+        ctx.ellipse(cx - cell * 0.08, cy - cell * 0.03, cell * 0.22, cell * 0.11, -0.25, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawLantern(x, y) {
+        const cx = boardLeft + x * cell + cell / 2;
+        const cy = boardTop + y * cell + cell / 2;
+        ctx.fillStyle = "#575855";
+        ctx.fillRect(cx - cell * 0.17, cy - cell * 0.14, cell * 0.34, cell * 0.32);
+        ctx.fillStyle = "#3d403f";
+        ctx.fillRect(cx - cell * 0.24, cy + cell * 0.18, cell * 0.48, cell * 0.09);
+        ctx.fillRect(cx - cell * 0.08, cy - cell * 0.32, cell * 0.16, cell * 0.18);
+        ctx.fillStyle = "#c9b27d";
+        ctx.fillRect(cx - cell * 0.1, cy - cell * 0.06, cell * 0.2, cell * 0.15);
+      }
+
+      function drawObstacles() {
+        for (const [id, type] of obstacles) {
+          const [x, y] = id.split(",").map(Number);
+          if (type === "lantern") drawLantern(x, y);
+          else drawRock(x, y);
+        }
+      }
+
+      function drawFingerRake() {
+        const c = tileCenter(current);
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.fillStyle = "#c77652";
+        ctx.beginPath();
+        ctx.ellipse(0, -cell * 0.1, cell * 0.15, cell * 0.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#283232";
+        ctx.fillRect(-cell * 0.08, cell * 0.08, cell * 0.16, cell * 0.24);
+        ctx.strokeStyle = "#9a4d35";
+        ctx.lineWidth = Math.max(2, cell * 0.035);
+        for (let i = -2; i <= 2; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(i * cell * 0.06, cell * 0.26);
+          ctx.lineTo(i * cell * 0.06, cell * 0.42);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function draw() {
+        boardMetrics();
+        drawBackground();
+        drawBoard();
+        drawRakeLines();
+        drawPreview();
+        drawObstacles();
+        drawFingerRake();
+        progressBar.style.width = `${progress()}%`;
+      }
+
+      canvas.addEventListener("pointerdown", (event) => {
+        const point = canvasPoint(event);
+        const tile = tileAtCanvasPoint(point.x, point.y);
+        if (!tile || tile.x !== current.x || tile.y !== current.y) {
+          showMessage("Start from the rake.");
+          return;
+        }
+        canvas.setPointerCapture(event.pointerId);
+        dragStart = { ...current };
+        dragPoint = point;
+        draw();
+      });
+
+      canvas.addEventListener("pointermove", (event) => {
+        if (!dragStart) return;
+        dragPoint = canvasPoint(event);
+        draw();
+      });
+
+      canvas.addEventListener("pointerup", (event) => {
+        if (!dragStart) return;
+        const point = canvasPoint(event);
+        const tile = tileAtCanvasPoint(point.x, point.y);
+        if (!tile) {
+          dragStart = null;
+          dragPoint = null;
+          draw();
+          return;
+        }
+        const to =
+          Math.abs(tile.x - current.x) > Math.abs(tile.y - current.y)
+            ? { x: tile.x, y: current.y }
+            : { x: current.x, y: tile.y };
+        commitMove(to);
+      });
+
+      canvas.addEventListener("pointercancel", () => {
+        dragStart = null;
+        dragPoint = null;
+        draw();
+      });
+
+      resetButton.addEventListener("click", () => setupLevel(levelIndex));
+      nextButton.addEventListener("click", () => setupLevel(levelIndex + 1));
+      undoButton.addEventListener("click", () => {
+        const last = path.pop();
+        if (!last) {
+          showMessage("No move to undo.");
+          return;
+        }
+        last.cells.forEach((tile) => raked.delete(key(tile.x, tile.y)));
+        current = { ...last.from };
+        showMessage("Last rake stroke undone.");
+        draw();
+      });
+
+      window.addEventListener("resize", draw);
+      setupLevel(0);
+    </script>
   </body>
 </html>
