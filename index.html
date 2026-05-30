@@ -9,7 +9,7 @@
         color-scheme: light;
         font-family:
           Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background: #17221d;
+        background: #1a6286;
         color: #f8f4e8;
       }
 
@@ -22,14 +22,23 @@
         margin: 0;
         min-height: 100svh;
         overflow: hidden;
-        background:
-          linear-gradient(180deg, rgba(23, 34, 29, 0.78), rgba(23, 34, 29, 0.48)),
-          repeating-linear-gradient(90deg, #75503a 0 36px, #68442f 36px 40px),
-          #67452f;
+        background: #1a6286;
         touch-action: none;
       }
 
+      #pond {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        width: 100%;
+        height: 100%;
+        image-rendering: pixelated;
+        pointer-events: none;
+      }
+
       .app {
+        position: relative;
+        z-index: 1;
         min-height: 100svh;
         display: grid;
         grid-template-rows: auto 1fr;
@@ -176,6 +185,7 @@
     </style>
   </head>
   <body>
+    <canvas id="pond" aria-hidden="true"></canvas>
     <main class="app">
       <header class="topbar">
         <div class="title-row">
@@ -191,7 +201,7 @@
           <div class="controls">
             <button id="undoButton" type="button">Undo</button>
             <button id="resetButton" type="button">Reset</button>
-            <button id="nextButton" type="button">Next</button>
+            <button id="hintButton" type="button">Hint</button>
           </div>
           <div class="message" id="message">Rake every open tile.</div>
         </div>
@@ -199,6 +209,8 @@
     </main>
 
     <script>
+      const pondCanvas = document.querySelector("#pond");
+      const pondCtx = pondCanvas.getContext("2d");
       const canvas = document.querySelector("#garden");
       const ctx = canvas.getContext("2d");
       const message = document.querySelector("#message");
@@ -206,9 +218,16 @@
       const levelLabel = document.querySelector("#levelLabel");
       const resetButton = document.querySelector("#resetButton");
       const undoButton = document.querySelector("#undoButton");
-      const nextButton = document.querySelector("#nextButton");
+      const hintButton = document.querySelector("#hintButton");
       const paperTexture = new Image();
       paperTexture.src = "assets/zen-paper.webp";
+
+      const directions = [
+        { x: 1, y: 0, label: "right" },
+        { x: -1, y: 0, label: "left" },
+        { x: 0, y: 1, label: "down" },
+        { x: 0, y: -1, label: "up" },
+      ];
 
       const levels = [
         {
@@ -260,9 +279,150 @@
       let rakeVisible = true;
       let noticeTimer = 0;
       let animationTime = 0;
+      let hintMove = null;
+      let hintTimer = 0;
+      let pondW = 0;
+      let pondH = 0;
+      const koi = [
+        { x: 0.07, y: 0.34, angle: 0.2, targetAngle: 0.2, nextTurn: 0, speed: 18, phase: 0.2, alpha: 0.7, spot: "#ff5a1d", fin: "#c9b7af" },
+        { x: 0.18, y: 0.88, angle: -0.35, targetAngle: -0.35, nextTurn: 0, speed: 15, phase: 1.9, alpha: 0.62, spot: "#e24a18", fin: "#bba8a1" },
+        { x: 0.5, y: 0.13, angle: 0.7, targetAngle: 0.7, nextTurn: 0, speed: 14, phase: 3.4, alpha: 0.66, spot: "#ff6f22", fin: "#cfc0b8" },
+        { x: 0.82, y: 0.64, angle: -0.9, targetAngle: -0.9, nextTurn: 0, speed: 16, phase: 4.6, alpha: 0.64, spot: "#f26923", fin: "#d4c5bd" },
+        { x: 0.93, y: 0.42, angle: 1.15, targetAngle: 1.15, nextTurn: 0, speed: 13, phase: 5.8, alpha: 0.58, spot: "#d64217", fin: "#b9a69f" },
+      ];
 
       function key(x, y) {
         return `${x},${y}`;
+      }
+
+      function resizePond() {
+        const scale = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        const nextW = Math.ceil(window.innerWidth * scale);
+        const nextH = Math.ceil(window.innerHeight * scale);
+        if (pondW === nextW && pondH === nextH) return;
+        pondW = nextW;
+        pondH = nextH;
+        pondCanvas.width = pondW;
+        pondCanvas.height = pondH;
+      }
+
+      function drawPixelKoi(fish, time) {
+        const scale = Math.max(2.6, Math.min(4.4, pondW / 260));
+        const wag = Math.round(Math.sin(time / 130 + fish.phase) * scale * 0.8);
+        const fin = Math.round(Math.sin(time / 170 + fish.phase) * scale * 0.45);
+        const px = (x, y, w, h) => pondCtx.fillRect(x * scale, y * scale, w * scale, h * scale);
+
+        pondCtx.save();
+        pondCtx.translate(fish.x * pondW, fish.y * pondH);
+        pondCtx.rotate(fish.angle + Math.sin(time / 900 + fish.phase) * 0.04);
+        pondCtx.globalAlpha = fish.alpha;
+
+        pondCtx.fillStyle = "rgba(8, 42, 62, 0.2)";
+        px(-5, 4, 10, 22);
+
+        pondCtx.fillStyle = "rgba(240, 238, 230, 0.98)";
+        px(-3, -18, 6, 3);
+        px(-5, -15, 9, 5);
+        px(-6, -10, 10, 9);
+        px(-5, -1, 9, 9);
+        px(-4, 8, 7, 8);
+        px(-3, 16, 5, 7);
+        px(-2, 22, 4, 4);
+
+        pondCtx.fillStyle = fish.spot;
+        px(-2, -16, 3, 4);
+        px(-4, -12, 5, 7);
+        px(-3, -5, 4, 6);
+        px(0, 0, 3, 4);
+        px(1, 5, 3, 4);
+        px(-2, 12, 3, 5);
+        px(0, 21, 2, 3);
+
+        pondCtx.fillStyle = "rgba(196, 49, 18, 0.95)";
+        px(-6, -10, 2, 4);
+        px(2, -8, 2, 5);
+        px(-3, 17, 2, 4);
+
+        pondCtx.fillStyle = fish.fin;
+        px(-10, -2 + fin / scale, 4, 7);
+        px(4, -3 - fin / scale, 5, 7);
+        px(-5, 8, 3, 7);
+        px(2, 9, 3, 6);
+
+        pondCtx.fillStyle = "rgba(245, 241, 234, 0.95)";
+        px(-2 + wag / scale, 23, 4, 4);
+        px(-5 + wag / scale, 26, 4, 4);
+        px(1 + wag / scale, 26, 4, 4);
+        px(-7 + wag / scale, 29, 3, 4);
+        px(4 + wag / scale, 29, 3, 4);
+
+        pondCtx.fillStyle = fish.spot;
+        px(-1 + wag / scale, 24, 2, 2);
+        pondCtx.restore();
+      }
+
+      function angleDelta(from, to) {
+        return Math.atan2(Math.sin(to - from), Math.cos(to - from));
+      }
+
+      function chooseKoiHeading(fish, time, towardCenter = false) {
+        if (towardCenter) {
+          const dx = 0.5 - fish.x;
+          const dy = 0.5 - fish.y;
+          fish.targetAngle = Math.atan2(dx, -dy);
+        } else {
+          fish.targetAngle = Math.random() * Math.PI * 2 - Math.PI;
+        }
+        fish.nextTurn = time + 1800 + Math.random() * 2600;
+      }
+
+      function drawPond(timestamp) {
+        resizePond();
+        const time = timestamp || 0;
+        const dt = Math.min(0.04, Math.max(0.001, (time - animationTime) / 1000 || 0.016));
+
+        pondCtx.clearRect(0, 0, pondW, pondH);
+        const gradient = pondCtx.createLinearGradient(0, 0, pondW, pondH);
+        gradient.addColorStop(0, "#287fa8");
+        gradient.addColorStop(0.52, "#1f6f9b");
+        gradient.addColorStop(1, "#164e78");
+        pondCtx.fillStyle = gradient;
+        pondCtx.fillRect(0, 0, pondW, pondH);
+
+        pondCtx.save();
+        pondCtx.globalAlpha = 0.16;
+        pondCtx.strokeStyle = "#b8e3ee";
+        pondCtx.lineWidth = Math.max(1, pondW / 420);
+        for (let y = -24; y < pondH + 24; y += 34) {
+          pondCtx.beginPath();
+          for (let x = -20; x < pondW + 24; x += 18) {
+            const wave = Math.sin(x * 0.018 + y * 0.024 + time * 0.001) * 5;
+            if (x === -20) pondCtx.moveTo(x, y + wave);
+            else pondCtx.lineTo(x, y + wave);
+          }
+          pondCtx.stroke();
+        }
+        pondCtx.restore();
+
+        pondCtx.fillStyle = "rgba(7, 31, 48, 0.1)";
+        pondCtx.fillRect(0, 0, pondW, pondH);
+
+        for (const fish of koi) {
+          if (time > fish.nextTurn) chooseKoiHeading(fish, time);
+          const margin = 0.08;
+          const outside = fish.x < margin || fish.x > 1 - margin || fish.y < margin || fish.y > 1 - margin;
+          if (outside) chooseKoiHeading(fish, time, true);
+
+          fish.angle += angleDelta(fish.angle, fish.targetAngle) * Math.min(1, dt * 1.4);
+          fish.x += Math.sin(fish.angle) * fish.speed * dt / pondW;
+          fish.y -= Math.cos(fish.angle) * fish.speed * dt / pondH;
+
+          if (fish.x < -0.12) fish.x = 1.12;
+          else if (fish.x > 1.12) fish.x = -0.12;
+          if (fish.y < -0.12) fish.y = 1.12;
+          else if (fish.y > 1.12) fish.y = -0.12;
+          drawPixelKoi(fish, time);
+        }
       }
 
       function setupLevel(index) {
@@ -276,6 +436,7 @@
         dragStart = null;
         dragPoint = null;
         activeStroke = [];
+        hintMove = null;
         rakeVisible = true;
         levelLabel.textContent = level.name;
         showMessage("Tap the rake to begin.");
@@ -347,6 +508,7 @@
           showMessage(result.text);
           return false;
         }
+        hintMove = null;
         result.cells.forEach((tile) => raked.add(key(tile.x, tile.y)));
         const move = { from: { ...current }, to: { ...to }, cells: result.cells };
         path.push(move);
@@ -364,18 +526,7 @@
       }
 
       function hasLegalMove() {
-        const directions = [
-          { x: 1, y: 0 },
-          { x: -1, y: 0 },
-          { x: 0, y: 1 },
-          { x: 0, y: -1 },
-        ];
-        return directions.some((direction) => {
-          const next = { x: current.x + direction.x, y: current.y + direction.y };
-          if (next.x < 0 || next.y < 0 || next.x >= level.size || next.y >= level.size) return false;
-          const id = key(next.x, next.y);
-          return !obstacles.has(id) && !raked.has(id);
-        });
+        return legalMoves(current, raked).length > 0;
       }
 
       function isStuck() {
@@ -392,6 +543,147 @@
         message.classList.add("show");
         window.clearTimeout(noticeTimer);
         noticeTimer = window.setTimeout(() => message.classList.remove("show"), 1700);
+      }
+
+      function inBounds(tile) {
+        return tile.x >= 0 && tile.y >= 0 && tile.x < level.size && tile.y < level.size;
+      }
+
+      function legalMoves(from, visited) {
+        return directions
+          .map((direction) => ({
+            direction,
+            tile: { x: from.x + direction.x, y: from.y + direction.y },
+          }))
+          .filter(({ tile }) => inBounds(tile) && !obstacles.has(key(tile.x, tile.y)) && !visited.has(key(tile.x, tile.y)));
+      }
+
+      function canReachUnraked(from, visited, total) {
+        const queue = [from];
+        const seen = new Set([key(from.x, from.y)]);
+        let reachableUnraked = 0;
+
+        while (queue.length > 0) {
+          const tile = queue.shift();
+          const id = key(tile.x, tile.y);
+          if (!visited.has(id)) reachableUnraked += 1;
+
+          for (const direction of directions) {
+            const next = { x: tile.x + direction.x, y: tile.y + direction.y };
+            const nextId = key(next.x, next.y);
+            if (!inBounds(next) || obstacles.has(nextId) || seen.has(nextId)) continue;
+            if (visited.has(nextId) && nextId !== key(from.x, from.y)) continue;
+            seen.add(nextId);
+            queue.push(next);
+          }
+        }
+
+        return reachableUnraked === total - visited.size;
+      }
+
+      function hasTooManyDeadEnds(from, visited) {
+        let deadEnds = 0;
+        const currentId = key(from.x, from.y);
+
+        for (let y = 0; y < level.size; y += 1) {
+          for (let x = 0; x < level.size; x += 1) {
+            const id = key(x, y);
+            if (obstacles.has(id) || visited.has(id)) continue;
+
+            let exits = 0;
+            for (const direction of directions) {
+              const next = { x: x + direction.x, y: y + direction.y };
+              const nextId = key(next.x, next.y);
+              if (!inBounds(next) || obstacles.has(nextId)) continue;
+              if (!visited.has(nextId) || nextId === currentId) exits += 1;
+            }
+            if (exits === 0) return true;
+            if (exits === 1) deadEnds += 1;
+            if (deadEnds > 1) return true;
+          }
+        }
+
+        return false;
+      }
+
+      function findHintDirection() {
+        const total = level.size * level.size - obstacles.size;
+        const firstMoves = legalMoves(current, raked);
+        if (firstMoves.length === 0) return { status: "stuck" };
+        if (raked.size === total) return { status: "complete" };
+
+        const deadline = performance.now() + 160;
+        const visited = new Set(raked);
+
+        function dfs(from, firstDirection) {
+          if (visited.size === total) return firstDirection;
+          if (performance.now() > deadline) return null;
+          if (!canReachUnraked(from, visited, total)) return null;
+          if (hasTooManyDeadEnds(from, visited)) return null;
+
+          const moves = legalMoves(from, visited).sort((a, b) => {
+            visited.add(key(a.tile.x, a.tile.y));
+            const aOptions = legalMoves(a.tile, visited).length;
+            visited.delete(key(a.tile.x, a.tile.y));
+            visited.add(key(b.tile.x, b.tile.y));
+            const bOptions = legalMoves(b.tile, visited).length;
+            visited.delete(key(b.tile.x, b.tile.y));
+            return aOptions - bOptions;
+          });
+
+          for (const move of moves) {
+            const id = key(move.tile.x, move.tile.y);
+            visited.add(id);
+            const result = dfs(move.tile, firstDirection || move.direction);
+            visited.delete(id);
+            if (result) return result;
+          }
+          return null;
+        }
+
+        const direction = dfs(current, null);
+        if (!direction) return { status: "unwinnable" };
+        return { status: "ok", direction };
+      }
+
+      function showHint() {
+        if (rakeVisible) {
+          showMessage("Tap the rake to begin.");
+          return;
+        }
+
+        const hint = findHintDirection();
+        window.clearTimeout(hintTimer);
+
+        if (hint.status === "stuck") {
+          hintMove = null;
+          showMessage("I see no paths please restart");
+          draw();
+          return;
+        }
+        if (hint.status === "complete") {
+          hintMove = null;
+          showMessage("Garden complete. The sand is fully raked.");
+          draw();
+          return;
+        }
+        if (hint.status === "unwinnable") {
+          hintMove = null;
+          showMessage("No winning path from here. Reset is safest.");
+          draw();
+          return;
+        }
+
+        hintMove = {
+          from: { ...current },
+          to: { x: current.x + hint.direction.x, y: current.y + hint.direction.y },
+        };
+        showMessage(`Best direction: ${hint.direction.label}.`);
+        draw();
+        hintTimer = window.setTimeout(() => {
+          hintMove = null;
+          draw();
+        }, 1800);
       }
 
       function drawBackground() {
@@ -824,12 +1116,48 @@
         ctx.restore();
       }
 
+      function drawHint() {
+        if (!hintMove) return;
+
+        const from = tileCenter(hintMove.from);
+        const to = tileCenter(hintMove.to);
+        const angle = Math.atan2(to.y - from.y, to.x - from.x);
+        const startX = from.x + Math.cos(angle) * cell * 0.15;
+        const startY = from.y + Math.sin(angle) * cell * 0.15;
+        const endX = to.x - Math.cos(angle) * cell * 0.16;
+        const endY = to.y - Math.sin(angle) * cell * 0.16;
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(134, 72, 39, 0.92)";
+        ctx.fillStyle = "rgba(134, 72, 39, 0.92)";
+        ctx.lineWidth = Math.max(5, cell * 0.07);
+        ctx.lineCap = "round";
+        ctx.shadowColor = "rgba(255, 243, 188, 0.75)";
+        ctx.shadowBlur = cell * 0.16;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+
+        ctx.translate(endX, endY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(cell * 0.18, 0);
+        ctx.lineTo(-cell * 0.08, -cell * 0.13);
+        ctx.lineTo(-cell * 0.08, cell * 0.13);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
       function draw() {
         boardMetrics();
         drawBackground();
         drawBoard();
         drawRakeLines();
         drawPreview();
+        drawHint();
         drawObstacles();
         drawZenRake();
         progressBar.style.width = `${progress()}%`;
@@ -880,13 +1208,14 @@
       });
 
       resetButton.addEventListener("click", () => setupLevel(levelIndex));
-      nextButton.addEventListener("click", () => setupLevel(levelIndex + 1));
+      hintButton.addEventListener("click", showHint);
       undoButton.addEventListener("click", () => {
         const last = path.pop();
         if (!last) {
           showMessage("No move to undo.");
           return;
         }
+        hintMove = null;
         last.cells.forEach((tile) => raked.delete(key(tile.x, tile.y)));
         current = { ...last.from };
         if (path.length === 0) rakeVisible = true;
@@ -894,11 +1223,15 @@
         draw();
       });
 
-      window.addEventListener("resize", draw);
+      window.addEventListener("resize", () => {
+        resizePond();
+        draw();
+      });
       paperTexture.addEventListener("load", draw);
       setupLevel(0);
 
       function animate(timestamp) {
+        drawPond(timestamp);
         animationTime = timestamp;
         draw();
         window.requestAnimationFrame(animate);
