@@ -32,13 +32,12 @@
       .app {
         min-height: 100svh;
         display: grid;
-        grid-template-rows: auto 1fr auto;
+        grid-template-rows: auto 1fr;
         gap: 10px;
         padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
       }
 
-      .topbar,
-      .footer {
+      .topbar {
         width: min(100%, 440px);
         margin: 0 auto;
       }
@@ -137,7 +136,12 @@
         transform: translateY(0);
       }
 
-      .footer {
+      .controls {
+        position: absolute;
+        z-index: 2;
+        top: 12px;
+        left: 12px;
+        right: 12px;
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 8px;
@@ -145,18 +149,29 @@
 
       button {
         min-height: 44px;
-        border: 1px solid rgba(248, 244, 232, 0.28);
+        border: 1px solid rgba(80, 70, 54, 0.2);
         border-radius: 8px;
-        background: rgba(248, 244, 232, 0.12);
-        color: #fff8e8;
+        background: rgba(255, 251, 238, 0.78);
+        color: #3b3126;
         font: inherit;
         font-size: 0.95rem;
         font-weight: 800;
+        box-shadow: 0 3px 10px rgba(35, 29, 20, 0.12);
+        backdrop-filter: blur(3px);
       }
 
       button:active {
         transform: translateY(1px);
-        background: rgba(248, 244, 232, 0.2);
+        background: rgba(255, 251, 238, 0.94);
+      }
+
+      button.stuck {
+        border-color: rgba(154, 55, 37, 0.8);
+        background: rgba(190, 76, 52, 0.9);
+        color: #fff7ec;
+        box-shadow:
+          0 0 0 3px rgba(190, 76, 52, 0.24),
+          0 6px 16px rgba(88, 30, 20, 0.28);
       }
     </style>
   </head>
@@ -173,15 +188,14 @@
       <section class="board-wrap" aria-label="sand garden puzzle">
         <div class="stage">
           <canvas id="garden" width="900" height="1260"></canvas>
+          <div class="controls">
+            <button id="undoButton" type="button">Undo</button>
+            <button id="resetButton" type="button">Reset</button>
+            <button id="nextButton" type="button">Next</button>
+          </div>
           <div class="message" id="message">Rake every open tile.</div>
         </div>
       </section>
-
-      <footer class="footer">
-        <button id="undoButton" type="button">Undo</button>
-        <button id="resetButton" type="button">Reset</button>
-        <button id="nextButton" type="button">Next</button>
-      </footer>
     </main>
 
     <script>
@@ -193,20 +207,23 @@
       const resetButton = document.querySelector("#resetButton");
       const undoButton = document.querySelector("#undoButton");
       const nextButton = document.querySelector("#nextButton");
+      const paperTexture = new Image();
+      paperTexture.src = "assets/zen-paper.webp";
 
       const levels = [
         {
           name: "Garden 1",
           size: 7,
-          start: [0, 6],
+          start: [6, 6],
           stones: [
-            [1, 1, "rock:flat"],
-            [3, 1, "house:tall"],
-            [5, 1, "rock:round"],
-            [2, 3, "rock:mossy"],
-            [4, 3, "house:wide"],
-            [1, 5, "house:gate"],
-            [5, 5, "rock:split"],
+            [2, 5, "rock:mossy"],
+            [6, 5, "house:gate"],
+            [5, 2, "rock:flat"],
+            [4, 6, "rock:round"],
+            [2, 0, "house:tall"],
+            [6, 0, "rock:split"],
+            [3, 3, "bonsai:pine"],
+            [0, 3, "house:wide"],
           ],
         },
         {
@@ -214,28 +231,16 @@
           size: 8,
           start: [7, 7],
           stones: [
-            [1, 1, "rock:mossy"],
-            [3, 1, "house:gate"],
-            [6, 1, "rock:flat"],
-            [2, 3, "house:tall"],
-            [5, 3, "rock:split"],
-            [1, 5, "rock:round"],
-            [4, 5, "house:wide"],
-            [6, 6, "rock:mossy"],
-          ],
-        },
-        {
-          name: "Garden 3",
-          size: 8,
-          start: [0, 0],
-          stones: [
-            [2, 0, "rock:flat"],
-            [5, 1, "house:wide"],
-            [1, 2, "house:tall"],
-            [4, 3, "rock:mossy"],
-            [7, 3, "rock:split"],
-            [2, 5, "rock:round"],
-            [5, 6, "house:gate"],
+            [2, 1, "rock:flat"],
+            [5, 4, "house:tall"],
+            [0, 4, "rock:mossy"],
+            [4, 6, "rock:round"],
+            [6, 2, "house:wide"],
+            [4, 7, "rock:split"],
+            [2, 0, "bonsai:pine"],
+            [1, 6, "house:gate"],
+            [4, 1, "rock:mossy"],
+            [3, 3, "rock:flat"],
           ],
         },
       ];
@@ -252,6 +257,7 @@
       let dragStart = null;
       let dragPoint = null;
       let activeStroke = [];
+      let rakeVisible = true;
       let noticeTimer = 0;
       let animationTime = 0;
 
@@ -270,8 +276,9 @@
         dragStart = null;
         dragPoint = null;
         activeStroke = [];
+        rakeVisible = true;
         levelLabel.textContent = level.name;
-        showMessage("Draw from the rake through open sand.");
+        showMessage("Tap the rake to begin.");
         draw();
       }
 
@@ -356,6 +363,25 @@
         return raked.size === level.size * level.size - obstacles.size;
       }
 
+      function hasLegalMove() {
+        const directions = [
+          { x: 1, y: 0 },
+          { x: -1, y: 0 },
+          { x: 0, y: 1 },
+          { x: 0, y: -1 },
+        ];
+        return directions.some((direction) => {
+          const next = { x: current.x + direction.x, y: current.y + direction.y };
+          if (next.x < 0 || next.y < 0 || next.x >= level.size || next.y >= level.size) return false;
+          const id = key(next.x, next.y);
+          return !obstacles.has(id) && !raked.has(id);
+        });
+      }
+
+      function isStuck() {
+        return !rakeVisible && !isComplete() && !hasLegalMove();
+      }
+
       function progress() {
         const total = level.size * level.size - obstacles.size;
         return Math.round((raked.size / total) * 100);
@@ -371,31 +397,17 @@
       function drawBackground() {
         const w = canvas.width;
         const h = canvas.height;
-        ctx.fillStyle = "#6b4934";
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.fillStyle = "#ad6a3f";
-        ctx.fillRect(0, 0, w, h * 0.15);
-        ctx.fillStyle = "#2e332f";
-        for (let x = -20; x < w + 40; x += 42) {
-          ctx.beginPath();
-          ctx.arc(x, 0, 28, 0, Math.PI);
-          ctx.fill();
-        }
-
-        ctx.fillStyle = "#7b5239";
-        for (let y = h * 0.16; y < h; y += 42) {
-          for (let x = (Math.floor(y) % 84) - 42; x < w; x += 84) {
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + 46, y + 10);
-            ctx.lineTo(x + 36, y + 36);
-            ctx.lineTo(x - 10, y + 28);
-            ctx.closePath();
-            ctx.strokeStyle = "rgba(42, 28, 20, 0.24)";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-          }
+        if (paperTexture.complete && paperTexture.naturalWidth > 0) {
+          const sx = paperTexture.naturalWidth * 0.155;
+          const sy = paperTexture.naturalHeight * 0.01;
+          const sw = paperTexture.naturalWidth * 0.69;
+          const sh = paperTexture.naturalHeight * 0.98;
+          ctx.drawImage(paperTexture, sx, sy, sw, sh, 0, 0, w, h);
+          ctx.fillStyle = "rgba(255, 252, 242, 0.18)";
+          ctx.fillRect(0, 0, w, h);
+        } else {
+          ctx.fillStyle = "#eee9dc";
+          ctx.fillRect(0, 0, w, h);
         }
       }
 
@@ -403,6 +415,13 @@
         const size = cell * level.size;
         ctx.fillStyle = "#d8cfbd";
         ctx.fillRect(boardLeft, boardTop, size, size);
+        if (rakeVisible) {
+          ctx.fillStyle = "rgba(168, 72, 52, 0.24)";
+          ctx.fillRect(boardLeft + current.x * cell, boardTop + current.y * cell, cell, cell);
+          ctx.strokeStyle = "rgba(146, 54, 38, 0.42)";
+          ctx.lineWidth = Math.max(2, cell * 0.035);
+          ctx.strokeRect(boardLeft + current.x * cell + 2, boardTop + current.y * cell + 2, cell - 4, cell - 4);
+        }
         ctx.strokeStyle = "#8e775b";
         ctx.lineWidth = 6;
         ctx.strokeRect(boardLeft, boardTop, size, size);
@@ -654,17 +673,21 @@
 
         const seed = x * 19.31 + y * 7.17;
         const flicker =
-          0.78 +
-          Math.sin(animationTime * 0.008 + seed) * 0.08 +
-          Math.sin(animationTime * 0.021 + seed * 1.7) * 0.05;
-        const glow = ctx.createRadialGradient(0, h * 0.03, 1, 0, h * 0.03, w * 0.3);
+          0.64 +
+          Math.sin(animationTime * 0.012 + seed) * 0.18 +
+          Math.sin(animationTime * 0.031 + seed * 1.7) * 0.1;
+        const glow = ctx.createRadialGradient(0, h * 0.03, 1, 0, h * 0.03, w * 0.36);
         glow.addColorStop(0, "#fff5a8");
         glow.addColorStop(0.68, `rgba(209, 182, 101, ${flicker})`);
         glow.addColorStop(1, "rgba(209, 182, 101, 0)");
         ctx.fillStyle = glow;
-        ctx.fillRect(-w * 0.22, -h * 0.06, w * 0.44, h * 0.18);
-        ctx.fillStyle = `rgba(255, 230, 129, ${Math.min(1, flicker + 0.12)})`;
+        ctx.fillRect(-w * 0.26, -h * 0.08, w * 0.52, h * 0.22);
+        ctx.fillStyle = `rgba(255, 232, 122, ${Math.min(1, flicker + 0.22)})`;
         ctx.fillRect(-w * 0.14, -h * 0.04, w * 0.28, h * 0.13);
+        ctx.fillStyle = `rgba(255, 252, 190, ${Math.min(1, flicker + 0.34)})`;
+        ctx.beginPath();
+        ctx.ellipse(0, h * 0.02, w * 0.08, h * 0.075, 0, 0, Math.PI * 2);
+        ctx.fill();
 
         ctx.fillStyle = "#606b67";
         ctx.beginPath();
@@ -701,26 +724,101 @@
           const [x, y] = id.split(",").map(Number);
           const [kind, variant = "round"] = type.split(":");
           if (kind === "house") drawStoneLantern(x, y, variant);
+          else if (kind === "bonsai") drawBonsai(x, y, variant);
           else drawRock(x, y, variant);
         }
       }
 
-      function drawFingerRake() {
+      function drawBonsai(x, y) {
+        const cx = boardLeft + x * cell + cell / 2;
+        const cy = boardTop + y * cell + cell / 2;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.fillStyle = "rgba(72, 68, 58, 0.2)";
+        ctx.beginPath();
+        ctx.ellipse(0, cell * 0.26, cell * 0.36, cell * 0.09, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#7a5137";
+        ctx.lineWidth = Math.max(5, cell * 0.09);
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(-cell * 0.05, cell * 0.15);
+        ctx.bezierCurveTo(-cell * 0.03, cell * 0.02, cell * 0.09, -cell * 0.08, cell * 0.0, -cell * 0.2);
+        ctx.stroke();
+        ctx.lineWidth = Math.max(3, cell * 0.045);
+        ctx.beginPath();
+        ctx.moveTo(cell * 0.0, -cell * 0.06);
+        ctx.bezierCurveTo(cell * 0.15, -cell * 0.11, cell * 0.2, -cell * 0.17, cell * 0.28, -cell * 0.23);
+        ctx.moveTo(-cell * 0.02, -cell * 0.08);
+        ctx.bezierCurveTo(-cell * 0.14, -cell * 0.13, -cell * 0.2, -cell * 0.18, -cell * 0.28, -cell * 0.18);
+        ctx.stroke();
+
+        ctx.fillStyle = "#3f4650";
+        ctx.beginPath();
+        ctx.moveTo(-cell * 0.3, cell * 0.12);
+        ctx.lineTo(cell * 0.3, cell * 0.12);
+        ctx.lineTo(cell * 0.22, cell * 0.29);
+        ctx.lineTo(-cell * 0.22, cell * 0.29);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#58616d";
+        ctx.fillRect(-cell * 0.22, cell * 0.11, cell * 0.44, cell * 0.06);
+        ctx.fillStyle = "#315d42";
+        ctx.fillRect(-cell * 0.2, cell * 0.08, cell * 0.4, cell * 0.06);
+
+        const leafPad = (x, y, w, h, color) => {
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.moveTo(x - w * 0.45, y + h * 0.18);
+          ctx.quadraticCurveTo(x - w * 0.52, y - h * 0.1, x - w * 0.18, y - h * 0.35);
+          ctx.lineTo(x + w * 0.18, y - h * 0.35);
+          ctx.quadraticCurveTo(x + w * 0.52, y - h * 0.1, x + w * 0.43, y + h * 0.18);
+          ctx.lineTo(x + w * 0.24, y + h * 0.34);
+          ctx.lineTo(x - w * 0.24, y + h * 0.34);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = "rgba(45, 95, 47, 0.45)";
+          ctx.fillRect(x - w * 0.36, y + h * 0.18, w * 0.72, h * 0.14);
+        };
+
+        leafPad(-cell * 0.2, -cell * 0.16, cell * 0.42, cell * 0.27, "#4f8d45");
+        leafPad(cell * 0.06, -cell * 0.27, cell * 0.44, cell * 0.3, "#68a957");
+        leafPad(cell * 0.27, -cell * 0.2, cell * 0.34, cell * 0.23, "#4e8b45");
+        leafPad(cell * 0.02, -cell * 0.1, cell * 0.34, cell * 0.2, "#3d773c");
+
+        ctx.fillStyle = "#8fbd69";
+        ctx.fillRect(-cell * 0.02, -cell * 0.39, cell * 0.08, cell * 0.06);
+        ctx.fillRect(-cell * 0.32, -cell * 0.22, cell * 0.07, cell * 0.05);
+        ctx.fillRect(cell * 0.22, -cell * 0.28, cell * 0.06, cell * 0.05);
+        ctx.restore();
+      }
+
+      function drawZenRake() {
+        if (!rakeVisible) return;
         const c = tileCenter(current);
         ctx.save();
         ctx.translate(c.x, c.y);
-        ctx.fillStyle = "#c77652";
+        ctx.rotate(-0.62);
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#b99d70";
+        ctx.lineWidth = Math.max(5, cell * 0.08);
         ctx.beginPath();
-        ctx.ellipse(0, -cell * 0.1, cell * 0.15, cell * 0.2, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#283232";
-        ctx.fillRect(-cell * 0.08, cell * 0.08, cell * 0.16, cell * 0.24);
-        ctx.strokeStyle = "#9a4d35";
-        ctx.lineWidth = Math.max(2, cell * 0.035);
-        for (let i = -2; i <= 2; i += 1) {
+        ctx.moveTo(-cell * 0.46, -cell * 0.06);
+        ctx.lineTo(cell * 0.2, -cell * 0.06);
+        ctx.stroke();
+
+        ctx.fillStyle = "#d7bc8b";
+        ctx.fillRect(cell * 0.12, -cell * 0.18, cell * 0.34, cell * 0.19);
+        ctx.fillStyle = "#b99d70";
+        ctx.fillRect(cell * 0.15, -cell * 0.15, cell * 0.28, cell * 0.04);
+        ctx.strokeStyle = "#ba9863";
+        ctx.lineWidth = Math.max(3, cell * 0.045);
+        for (let i = 0; i < 4; i += 1) {
+          const x = cell * (0.17 + i * 0.08);
           ctx.beginPath();
-          ctx.moveTo(i * cell * 0.06, cell * 0.26);
-          ctx.lineTo(i * cell * 0.06, cell * 0.42);
+          ctx.moveTo(x, -cell * 0.02);
+          ctx.lineTo(x, cell * 0.18);
           ctx.stroke();
         }
         ctx.restore();
@@ -733,8 +831,9 @@
         drawRakeLines();
         drawPreview();
         drawObstacles();
-        drawFingerRake();
+        drawZenRake();
         progressBar.style.width = `${progress()}%`;
+        resetButton.classList.toggle("stuck", isStuck());
       }
 
       canvas.addEventListener("pointerdown", (event) => {
@@ -747,6 +846,7 @@
         canvas.setPointerCapture(event.pointerId);
         dragStart = { ...current };
         activeStroke = [];
+        rakeVisible = false;
         dragPoint = point;
         draw();
       });
@@ -789,11 +889,13 @@
         }
         last.cells.forEach((tile) => raked.delete(key(tile.x, tile.y)));
         current = { ...last.from };
+        if (path.length === 0) rakeVisible = true;
         showMessage("Last rake stroke undone.");
         draw();
       });
 
       window.addEventListener("resize", draw);
+      paperTexture.addEventListener("load", draw);
       setupLevel(0);
 
       function animate(timestamp) {
