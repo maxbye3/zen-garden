@@ -199,6 +199,10 @@
         pointer-events: none;
       }
 
+      .intro-done .start-panel {
+        display: none;
+      }
+
       .stage::after {
         content: "";
         position: absolute;
@@ -873,81 +877,73 @@
         pondCtx.translate(leaf.x, leaf.y);
         pondCtx.rotate(leaf.angle);
         pondCtx.globalAlpha = 0.86;
-        pondCtx.fillStyle = "rgba(67, 55, 35, 0.18)";
-        px(-4.5, 5.4, 9, 1.1);
+
+        pondCtx.fillStyle = "rgba(71, 57, 34, 0.16)";
+        poly([
+          [-4.4, 2.7],
+          [-1.9, 2.2],
+          [0, 2.55],
+          [2.2, 2.1],
+          [4.5, 2.85],
+          [2.15, 3.45],
+          [0, 3.2],
+          [-2.25, 3.5],
+        ]);
+
         pondCtx.fillStyle = leaf.color;
-
         poly([
-          [0, -7],
-          [1.1, -3.4],
-          [0.45, -0.6],
-          [-0.45, -0.6],
-          [-1.1, -3.4],
-        ]);
-        poly([
-          [-3.8, -5.1],
-          [-1.15, -2.7],
-          [-0.65, -0.45],
-          [-1.9, 0.25],
-          [-4.9, -2.1],
-        ]);
-        poly([
-          [3.8, -5.1],
-          [1.15, -2.7],
-          [0.65, -0.45],
-          [1.9, 0.25],
-          [4.9, -2.1],
-        ]);
-        poly([
-          [-6.2, -0.85],
-          [-2.1, -0.75],
-          [-0.8, 0.55],
-          [-2.4, 1.65],
-          [-6.1, 1.25],
-        ]);
-        poly([
-          [6.2, -0.85],
-          [2.1, -0.75],
-          [0.8, 0.55],
-          [2.4, 1.65],
-          [6.1, 1.25],
-        ]);
-        poly([
-          [-3.7, 2.1],
-          [-1.2, 1.0],
-          [-0.35, 2.1],
-          [-1.3, 3.75],
-          [-3.8, 4.15],
-        ]);
-        poly([
-          [3.7, 2.1],
-          [1.2, 1.0],
-          [0.35, 2.1],
-          [1.3, 3.75],
-          [3.8, 4.15],
-        ]);
-        poly([
-          [-1.4, -0.2],
-          [1.4, -0.2],
-          [1.0, 4.8],
-          [0.25, 5.9],
-          [-0.25, 5.9],
-          [-1.0, 4.8],
+          [0, -7.4],
+          [0.75, -4.6],
+          [2.3, -6.2],
+          [2.15, -3.6],
+          [4.9, -4.55],
+          [3.55, -2.3],
+          [6.7, -2.25],
+          [4.2, -0.65],
+          [5.65, 1.0],
+          [3.05, 0.8],
+          [3.2, 3.05],
+          [1.35, 2.0],
+          [0.45, 5.1],
+          [0, 3.05],
+          [-0.45, 5.1],
+          [-1.35, 2.0],
+          [-3.2, 3.05],
+          [-3.05, 0.8],
+          [-5.65, 1.0],
+          [-4.2, -0.65],
+          [-6.7, -2.25],
+          [-3.55, -2.3],
+          [-4.9, -4.55],
+          [-2.15, -3.6],
+          [-2.3, -6.2],
+          [-0.75, -4.6],
         ]);
 
-        pondCtx.fillStyle = "rgba(255, 174, 42, 0.42)";
+        pondCtx.fillStyle = "rgba(255, 184, 54, 0.35)";
         poly([
-          [0, -5.8],
-          [0.45, -2.7],
-          [0.15, 3.6],
-          [-0.15, 3.6],
-          [-0.45, -2.7],
+          [0, -6.3],
+          [0.35, -3.8],
+          [0.18, 2.8],
+          [-0.18, 2.8],
+          [-0.35, -3.8],
         ]);
-        px(-4.7, 0.1, 2.7, 0.8);
-        px(2.0, 0.1, 2.7, 0.8);
+        pondCtx.strokeStyle = "rgba(255, 207, 84, 0.42)";
+        pondCtx.lineWidth = Math.max(1, s * 0.42);
+        pondCtx.lineCap = "round";
+        pondCtx.beginPath();
+        pondCtx.moveTo(0, 0);
+        pondCtx.lineTo(-4.5 * s, -1.55 * s);
+        pondCtx.moveTo(0, 0);
+        pondCtx.lineTo(4.5 * s, -1.55 * s);
+        pondCtx.moveTo(0, 0.4 * s);
+        pondCtx.lineTo(-2.2 * s, 2.15 * s);
+        pondCtx.moveTo(0, 0.4 * s);
+        pondCtx.lineTo(2.2 * s, 2.15 * s);
+        pondCtx.stroke();
 
         pondCtx.fillStyle = "rgba(89, 54, 28, 0.72)";
-        px(-0.3, 2.4, 0.6, 5.6);
+        px(-0.32, 2.8, 0.64, 3.2);
         pondCtx.restore();
       }
 
@@ -1083,7 +1079,7 @@
         activeStroke.push(move);
         current = { ...to };
         if (isComplete()) {
-          showMessage("Garden complete. The sand is fully raked.");
+          showMessage(levelIndex === 1 ? 'Code: "i am the weiner"' : "Garden complete. The sand is fully raked.", 0);
           scheduleCompletionTransition();
         }
         draw();
@@ -1628,52 +1624,36 @@
         const cx = boardLeft + x * cell + w / 2;
         const cy = boardTop + y * cell + h / 2;
         const t = animationTime * 0.001;
-        const topW = w * 0.78;
-        const topH = h * 0.58;
-        const depth = h * 0.18;
+        const pondWLocal = w * 0.97;
+        const pondHLocal = h * 0.9;
 
         ctx.save();
         ctx.translate(cx, cy);
 
         ctx.fillStyle = "rgba(64, 75, 62, 0.18)";
-        ctx.fillRect(-topW * 0.48, topH * 0.36, topW * 0.96, h * 0.16);
+        ctx.fillRect(-pondWLocal * 0.46, pondHLocal * 0.4, pondWLocal * 0.92, h * 0.1);
 
-        ctx.fillStyle = "#4c5e58";
-        ctx.beginPath();
-        ctx.moveTo(-topW / 2, -topH / 2);
-        ctx.lineTo(topW / 2, -topH / 2);
-        ctx.lineTo(topW / 2, topH / 2);
-        ctx.lineTo(-topW / 2, topH / 2);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = "#3f4d49";
-        ctx.beginPath();
-        ctx.moveTo(-topW / 2, topH / 2);
-        ctx.lineTo(topW / 2, topH / 2);
-        ctx.lineTo(topW * 0.42, topH / 2 + depth);
-        ctx.lineTo(-topW * 0.42, topH / 2 + depth);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = "#66736a";
-        ctx.fillRect(-topW * 0.43, -topH * 0.39, topW * 0.86, topH * 0.78);
+        ctx.fillStyle = "#5d7167";
+        ctx.fillRect(-pondWLocal / 2, -pondHLocal / 2, pondWLocal, pondHLocal);
+        ctx.strokeStyle = "rgba(59, 75, 68, 0.75)";
+        ctx.lineWidth = Math.max(2, cell * 0.035);
+        ctx.strokeRect(-pondWLocal / 2, -pondHLocal / 2, pondWLocal, pondHLocal);
 
         ctx.fillStyle = "#247996";
-        ctx.fillRect(-topW * 0.36, -topH * 0.29, topW * 0.72, topH * 0.58);
+        ctx.fillRect(-pondWLocal * 0.44, -pondHLocal * 0.38, pondWLocal * 0.88, pondHLocal * 0.76);
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(-topW * 0.36, -topH * 0.29, topW * 0.72, topH * 0.58);
+        ctx.rect(-pondWLocal * 0.44, -pondHLocal * 0.38, pondWLocal * 0.88, pondHLocal * 0.76);
         ctx.clip();
         ctx.strokeStyle = "rgba(183, 224, 226, 0.42)";
         ctx.lineWidth = Math.max(1, cell * 0.02);
         ctx.lineCap = "round";
         for (let i = -3; i <= 3; i += 1) {
           ctx.beginPath();
-          for (let px = -topW * 0.35; px <= topW * 0.36; px += cell * 0.12) {
-            const py = i * topH * 0.08 + Math.sin(px * 0.045 + t * 2.2 + i) * cell * 0.04;
-            if (px === -topW * 0.35) ctx.moveTo(px, py);
+          for (let px = -pondWLocal * 0.41; px <= pondWLocal * 0.42; px += cell * 0.12) {
+            const py = i * pondHLocal * 0.09 + Math.sin(px * 0.045 + t * 2.2 + i) * cell * 0.035;
+            if (px === -pondWLocal * 0.41) ctx.moveTo(px, py);
             else ctx.lineTo(px, py);
           }
           ctx.stroke();
@@ -1690,9 +1670,9 @@
           const v = Math.sin(t * fish.speed * 0.72 + fish.phase * 1.7);
           const du = Math.cos(t * fish.speed + fish.phase) * fish.speed;
           const dv = Math.cos(t * fish.speed * 0.72 + fish.phase * 1.7) * fish.speed * 0.72;
-          const fx = u * topW * 0.26;
-          const fy = v * topH * 0.16;
-          const angle = Math.atan2(dv * topH, du * topW) + Math.PI / 2;
+          const fx = u * pondWLocal * 0.34;
+          const fy = v * pondHLocal * 0.26;
+          const angle = Math.atan2(dv * pondHLocal, du * pondWLocal) + Math.PI / 2;
 
           ctx.save();
           ctx.translate(fx, fy);
@@ -1711,9 +1691,9 @@
         ctx.restore();
 
         ctx.fillStyle = "#7d8a73";
-        ctx.fillRect(-topW * 0.47, -topH * 0.48, cell * 0.18, cell * 0.08);
+        ctx.fillRect(-pondWLocal * 0.49, -pondHLocal * 0.48, cell * 0.18, cell * 0.08);
         ctx.fillStyle = "#95a081";
-        ctx.fillRect(topW * 0.36, topH * 0.43, cell * 0.16, cell * 0.07);
+        ctx.fillRect(pondWLocal * 0.37, pondHLocal * 0.41, cell * 0.16, cell * 0.07);
         ctx.restore();
       }
 
@@ -1944,6 +1924,10 @@
       setupLevel(startingLevel);
       if (startingLevel > 0 || window.location.search.includes("garden=2")) {
         replaceLevelPath(startingLevel);
+      }
+      if (startingLevel === 1) {
+        document.body.classList.remove("prestart");
+        document.body.classList.add("intro-done");
       }
       function finishIntro() {
         if (!document.body.classList.contains("intro")) return;
