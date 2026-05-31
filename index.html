@@ -504,6 +504,7 @@
       let hintMove = null;
       let hintTimer = 0;
       let hintsLeft = 3;
+      let easyMode = false;
       let resetRecommended = false;
       let positionHighlight = false;
       let itemFadeStart = 0;
@@ -511,8 +512,10 @@
       let pondW = 0;
       let pondH = 0;
       let lastLeafSpawn = 0;
+      let konamiIndex = 0;
       const ripples = [];
       const acerLeaves = [];
+      const konamiCode = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
       const koi = [
         { x: 0.07, y: 0.34, angle: 0.2, targetAngle: 0.2, nextTurn: 0, speed: 18, phase: 0.2, alpha: 0.7, spot: "#ff5a1d", fin: "#c9b7af" },
         { x: 0.18, y: 0.88, angle: -0.35, targetAngle: -0.35, nextTurn: 0, speed: 15, phase: 1.9, alpha: 0.62, spot: "#e24a18", fin: "#bba8a1" },
@@ -960,6 +963,7 @@
         dragPoint = null;
         activeStroke = [];
         hintMove = null;
+        easyMode = isEasyMode();
         hintsLeft = 3;
         resetRecommended = false;
         positionHighlight = false;
@@ -980,8 +984,22 @@
         return 0;
       }
 
+      function isEasyMode() {
+        return window.location.hash.toLowerCase() === "#easy";
+      }
+
+      function unlockEasyMode() {
+        if (!easyMode) {
+          window.location.hash = "easy";
+        }
+        easyMode = true;
+        updateHintCounter();
+        showMessage("Easy mode unlocked. Unlimited hints.", 2200);
+      }
+
       function levelPath(index) {
-        return index === 1 ? "/garden-2/" : "/";
+        const hash = isEasyMode() ? "#easy" : "";
+        return `${index === 1 ? "/garden-2/" : "/"}${hash}`;
       }
 
       function replaceLevelPath(index) {
@@ -1079,7 +1097,12 @@
         activeStroke.push(move);
         current = { ...to };
         if (isComplete()) {
-          showMessage(levelIndex === 1 ? 'Code: "i am the weiner"' : "Garden complete. The sand is fully raked.", 0);
+          showMessage(
+            levelIndex === 1
+              ? "Congrats! Please message me 'i am the weiner' and I will be very very pleased with you"
+              : "Garden complete. The sand is fully raked.",
+            0,
+          );
           scheduleCompletionTransition();
         }
         draw();
@@ -1113,13 +1136,14 @@
       }
 
       function hintsLeftText() {
+        if (easyMode) return "unlimited hints.";
         if (hintsLeft === 2) return "two hints left.";
         if (hintsLeft === 1) return "one hint left.";
         return "no hints left.";
       }
 
       function updateHintCounter() {
-        hintButton.textContent = `Hint (${hintsLeft})`;
+        hintButton.textContent = easyMode ? "Hint (∞)" : `Hint (${hintsLeft})`;
       }
 
       function inBounds(tile) {
@@ -1228,7 +1252,7 @@
           showMessage("Tap the rake to begin.", 0);
           return;
         }
-        if (hintsLeft <= 0) {
+        if (!easyMode && hintsLeft <= 0) {
           showMessage("No hints left.");
           return;
         }
@@ -1261,7 +1285,7 @@
           from: { ...current },
           to: { x: current.x + hint.direction.x, y: current.y + hint.direction.y },
         };
-        hintsLeft -= 1;
+        if (!easyMode) hintsLeft -= 1;
         updateHintCounter();
         showMessage(`Best direction: ${hint.direction.label}. ${hintsLeftText()}`);
         draw();
@@ -1919,6 +1943,22 @@
         draw();
       });
       window.addEventListener("popstate", () => setupLevel(levelFromLocation()));
+      window.addEventListener("hashchange", () => {
+        easyMode = isEasyMode();
+        updateHintCounter();
+      });
+      window.addEventListener("keydown", (event) => {
+        const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+        if (key === konamiCode[konamiIndex]) {
+          konamiIndex += 1;
+          if (konamiIndex === konamiCode.length) {
+            konamiIndex = 0;
+            unlockEasyMode();
+          }
+          return;
+        }
+        konamiIndex = key === konamiCode[0] ? 1 : 0;
+      });
       paperTexture.addEventListener("load", draw);
       const startingLevel = levelFromLocation();
       setupLevel(startingLevel);
