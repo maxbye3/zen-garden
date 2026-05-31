@@ -49,11 +49,23 @@
       .topbar {
         width: min(100%, 440px);
         margin: 0 auto;
-      }
-
-      .topbar {
         display: grid;
         gap: 8px;
+        transition:
+          opacity 420ms ease,
+          transform 420ms ease;
+      }
+
+      .prestart .topbar,
+      .intro .topbar {
+        opacity: 0;
+        transform: translateY(-8px);
+        pointer-events: none;
+      }
+
+      .intro-done .topbar {
+        opacity: 1;
+        transform: translateY(0);
       }
 
       .title-row {
@@ -108,7 +120,176 @@
         border-radius: 8px;
         overflow: hidden;
         box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
-        background: #d8cfbd;
+        background:
+          linear-gradient(rgba(255, 252, 242, 0.14), rgba(255, 252, 242, 0.14)),
+          url("assets/zen-paper.webp") center / cover,
+          #d8cfbd;
+        transform-origin: top center;
+      }
+
+      .prestart .stage {
+        opacity: 0;
+        transform: translateY(12px) scale(0.96);
+        pointer-events: none;
+      }
+
+      .intro .stage {
+        opacity: 1;
+        animation:
+          paper-fade-in 360ms ease both,
+          unfurl-paper 1250ms cubic-bezier(0.2, 0.86, 0.2, 1) 240ms both;
+      }
+
+      .start-panel {
+        position: fixed;
+        z-index: 4;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        pointer-events: none;
+      }
+
+      .start-card {
+        width: min(88vw, 460px);
+        display: grid;
+        justify-items: center;
+        gap: 14px;
+        pointer-events: none;
+      }
+
+      .title-image {
+        width: min(100%, 420px);
+        height: auto;
+        display: block;
+        border-radius: 8px;
+        filter: drop-shadow(0 16px 28px rgba(6, 31, 47, 0.3));
+      }
+
+      .start-button {
+        min-height: 54px;
+        padding: 0 24px;
+        border-color: rgba(255, 252, 232, 0.36);
+        background: rgba(255, 251, 238, 0.9);
+        color: #2d2f28;
+        box-shadow: 0 14px 32px rgba(10, 38, 56, 0.28);
+        pointer-events: auto;
+      }
+
+      .feed-note {
+        margin: 0;
+        padding: 7px 12px;
+        border-radius: 999px;
+        background: rgba(9, 45, 65, 0.36);
+        color: #fff8e8;
+        font-size: 0.9rem;
+        font-weight: 800;
+        line-height: 1.2;
+        text-align: center;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+        box-shadow: 0 8px 18px rgba(7, 31, 48, 0.18);
+      }
+
+      body:not(.prestart) .start-panel {
+        opacity: 0;
+        transform: translateY(-8px);
+        transition:
+          opacity 220ms ease,
+          transform 220ms ease;
+        pointer-events: none;
+      }
+
+      .stage::after {
+        content: "";
+        position: absolute;
+        z-index: 3;
+        left: -8px;
+        right: -8px;
+        top: 0;
+        height: 30px;
+        border-radius: 999px;
+        background:
+          linear-gradient(180deg, rgba(128, 88, 54, 0.28), rgba(255, 250, 235, 0.92) 42%, rgba(97, 65, 42, 0.3)),
+          url("assets/zen-paper.webp") center / cover;
+        box-shadow: 0 10px 16px rgba(62, 43, 29, 0.2);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .intro .stage::after {
+        animation: paper-roll 1250ms cubic-bezier(0.2, 0.86, 0.2, 1) 240ms both;
+      }
+
+      .intro #garden,
+      .intro .controls,
+      .intro .aim {
+        opacity: 0;
+        animation: fade-on-paper 520ms ease 1520ms both;
+      }
+
+      .intro-done #garden,
+      .intro-done .controls,
+      .intro-done .aim {
+        opacity: 1;
+      }
+
+      .intro .message {
+        opacity: 0 !important;
+      }
+
+      @keyframes paper-fade-in {
+        from {
+          opacity: 0;
+        }
+
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes unfurl-paper {
+        0% {
+          clip-path: inset(0 0 93% 0 round 8px);
+          transform: translateY(16px) scaleX(0.88);
+        }
+
+        56% {
+          clip-path: inset(0 0 24% 0 round 8px);
+          transform: translateY(4px) scaleX(0.98);
+        }
+
+        100% {
+          clip-path: inset(0 0 0 0 round 8px);
+          transform: translateY(0) scaleX(1);
+        }
+      }
+
+      @keyframes paper-roll {
+        0% {
+          top: 0;
+          opacity: 1;
+        }
+
+        78% {
+          opacity: 1;
+        }
+
+        100% {
+          top: calc(100% - 30px);
+          opacity: 0;
+        }
+      }
+
+      @keyframes fade-on-paper {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
       canvas {
@@ -207,8 +388,15 @@
       }
     </style>
   </head>
-  <body>
+  <body class="prestart">
     <canvas id="pond" aria-hidden="true"></canvas>
+    <div class="start-panel">
+      <div class="start-card">
+        <img class="title-image" src="assets/title-screen.png" alt="Max's Zen Garden puzzle" />
+        <button class="start-button" id="startButton" type="button">Click to start</button>
+        <p class="feed-note">or click on the water to feed fish</p>
+      </div>
+    </div>
     <main class="app">
       <header class="topbar">
         <div class="title-row">
@@ -226,7 +414,7 @@
             <button id="resetButton" type="button">Reset</button>
             <button id="hintButton" type="button">Hint</button>
           </div>
-          <div class="aim">Aim of the game is: drag your finger in the sand. Fill up all the available spaces to win.</div>
+          <div class="aim">Aim of the game is: drag your finger in the sand.<br />Fill up all the available spaces to win.</div>
           <div class="message" id="message">Rake every open tile.</div>
         </div>
       </section>
@@ -243,6 +431,7 @@
       const resetButton = document.querySelector("#resetButton");
       const undoButton = document.querySelector("#undoButton");
       const hintButton = document.querySelector("#hintButton");
+      const startButton = document.querySelector("#startButton");
       const paperTexture = new Image();
       paperTexture.src = "assets/zen-paper.webp";
 
@@ -283,7 +472,12 @@
             [2, 0, "bonsai:pine"],
             [1, 6, "house:gate"],
             [4, 1, "rock:mossy"],
-            [3, 3, "rock:flat"],
+            [2, 3, "pond:koi"],
+            [3, 3, "pond:block"],
+            [4, 3, "pond:block"],
+            [2, 4, "pond:block"],
+            [3, 4, "pond:block"],
+            [4, 4, "pond:block"],
           ],
         },
       ];
@@ -306,9 +500,15 @@
       let hintMove = null;
       let hintTimer = 0;
       let hintsLeft = 3;
+      let resetRecommended = false;
+      let positionHighlight = false;
+      let itemFadeStart = 0;
+      let completeTimer = 0;
       let pondW = 0;
       let pondH = 0;
+      let lastLeafSpawn = 0;
       const ripples = [];
+      const acerLeaves = [];
       const koi = [
         { x: 0.07, y: 0.34, angle: 0.2, targetAngle: 0.2, nextTurn: 0, speed: 18, phase: 0.2, alpha: 0.7, spot: "#ff5a1d", fin: "#c9b7af" },
         { x: 0.18, y: 0.88, angle: -0.35, targetAngle: -0.35, nextTurn: 0, speed: 15, phase: 1.9, alpha: 0.62, spot: "#e24a18", fin: "#bba8a1" },
@@ -446,11 +646,11 @@
         for (const fish of koi) {
           fish.targetX = target.x;
           fish.targetY = target.y;
-          fish.rushUntil = (animationTime || performance.now()) + 2400;
+          fish.rushUntil = (animationTime || performance.now()) + 5200;
           const dx = target.x - fish.x;
           const dy = target.y - fish.y;
           fish.targetAngle = Math.atan2(dx, -dy);
-          fish.nextTurn = fish.rushUntil + Math.random() * 900;
+          fish.nextTurn = fish.rushUntil + Math.random() * 1200;
         }
       }
 
@@ -458,6 +658,11 @@
         resizePond();
         const time = timestamp || 0;
         const dt = Math.min(0.04, Math.max(0.001, (time - animationTime) / 1000 || 0.016));
+
+        if (levelIndex === 1) {
+          drawShojiGardenBackground(time, dt);
+          return;
+        }
 
         pondCtx.clearRect(0, 0, pondW, pondH);
         const gradient = pondCtx.createLinearGradient(0, 0, pondW, pondH);
@@ -474,7 +679,7 @@
         for (let y = -24; y < pondH + 24; y += 34) {
           pondCtx.beginPath();
           for (let x = -20; x < pondW + 24; x += 18) {
-            const wave = Math.sin(x * 0.018 + y * 0.024 + time * 0.001) * 5;
+            const wave = Math.sin(x * 0.018 + y * 0.024 + time * 0.00155) * 5;
             if (x === -20) pondCtx.moveTo(x, y + wave);
             else pondCtx.lineTo(x, y + wave);
           }
@@ -493,7 +698,7 @@
             const dx = fish.targetX - fish.x;
             const dy = fish.targetY - fish.y;
             fish.targetAngle = Math.atan2(dx, -dy);
-            if (Math.hypot(dx, dy) < 0.035) fish.rushUntil = 0;
+            if (Math.hypot(dx, dy) < 0.018 && time > fish.rushUntil - 1200) fish.rushUntil = 0;
           } else if (time > fish.nextTurn) {
             chooseKoiHeading(fish, time);
           }
@@ -503,7 +708,7 @@
           if (outside && !isRushing) chooseKoiHeading(fish, time, true);
 
           const turnRate = isRushing ? 3.6 : 1.4;
-          const speed = fish.speed * (isRushing ? 3.2 : 1);
+          const speed = fish.speed * (isRushing ? 7.2 : 1);
           fish.angle += angleDelta(fish.angle, fish.targetAngle) * Math.min(1, dt * turnRate);
           fish.x += Math.sin(fish.angle) * speed * dt / pondW;
           fish.y -= Math.cos(fish.angle) * speed * dt / pondH;
@@ -516,7 +721,238 @@
         }
       }
 
+      function drawShojiGardenBackground(time, dt) {
+        pondCtx.clearRect(0, 0, pondW, pondH);
+
+        const base = pondCtx.createLinearGradient(0, 0, pondW, pondH);
+        base.addColorStop(0, "#d7d29a");
+        base.addColorStop(0.5, "#c8c284");
+        base.addColorStop(1, "#aaa06e");
+        pondCtx.fillStyle = base;
+        pondCtx.fillRect(0, 0, pondW, pondH);
+
+        const rail = Math.max(8, pondW * 0.014);
+        const panels = [
+          [0, 0, pondW * 0.5, pondH * 0.3, "h"],
+          [0, pondH * 0.3, pondW * 0.25, pondH * 0.58, "v"],
+          [pondW * 0.25, pondH * 0.3, pondW * 0.25, pondH * 0.58, "v"],
+          [pondW * 0.5, 0, pondW * 0.26, pondH * 0.66, "v"],
+          [pondW * 0.76, 0, pondW * 0.24, pondH * 0.66, "v"],
+          [pondW * 0.5, pondH * 0.66, pondW * 0.5, pondH * 0.22, "h"],
+          [0, pondH * 0.88, pondW, pondH * 0.12, "h"],
+        ];
+
+        for (const [x, y, w, h, direction] of panels) {
+          drawTatamiPanel(x + rail * 0.35, y + rail * 0.35, w - rail * 0.7, h - rail * 0.7, direction, time);
+        }
+
+        pondCtx.fillStyle = "rgba(82, 70, 43, 0.68)";
+        pondCtx.fillRect(0, pondH * 0.3 - rail / 2, pondW * 0.5, rail);
+        pondCtx.fillRect(pondW * 0.5 - rail / 2, 0, rail, pondH);
+        pondCtx.fillRect(pondW * 0.76 - rail / 2, 0, rail, pondH * 0.66);
+        pondCtx.fillRect(pondW * 0.5, pondH * 0.66 - rail / 2, pondW * 0.5, rail);
+        pondCtx.fillRect(pondW * 0.25 - rail / 2, pondH * 0.3, rail, pondH * 0.58);
+        pondCtx.fillRect(0, pondH * 0.88 - rail / 2, pondW, rail);
+
+        pondCtx.save();
+        pondCtx.globalAlpha = 0.16;
+        pondCtx.fillStyle = "#fff5bf";
+        pondCtx.fillRect(0, 0, pondW, pondH);
+        pondCtx.restore();
+
+        pondCtx.fillStyle = "rgba(84, 74, 48, 0.1)";
+        pondCtx.fillRect(0, 0, pondW, pondH);
+
+        if (time - lastLeafSpawn > 1500) {
+          lastLeafSpawn = time;
+          const palette = ["#a82022", "#c73324", "#df4b24", "#ec7a22", "#d99d28", "#7b983c", "#438142"];
+          acerLeaves.push({
+            x: Math.random() * pondW,
+            y: -30,
+            restY: pondH * (0.28 + Math.random() * 0.64),
+            size: Math.max(2.2, Math.min(4.4, pondW / 260)) * (0.8 + Math.random() * 0.35),
+            drift: (Math.random() - 0.5) * pondW * 0.035,
+            speed: 22 + Math.random() * 22,
+            spin: (Math.random() - 0.5) * 1.35,
+            angle: Math.random() * Math.PI * 2,
+            color: palette[Math.floor(Math.random() * palette.length)],
+            settled: false,
+          });
+          const settledLeaves = acerLeaves.filter((leaf) => leaf.settled);
+          if (acerLeaves.length > 24 && settledLeaves.length > 10) {
+            const oldestSettled = acerLeaves.findIndex((leaf) => leaf.settled);
+            if (oldestSettled >= 0) acerLeaves.splice(oldestSettled, 1);
+          }
+        }
+
+        for (let i = acerLeaves.length - 1; i >= 0; i -= 1) {
+          const leaf = acerLeaves[i];
+          if (!leaf.settled) {
+            leaf.y += leaf.speed * dt;
+            leaf.x += Math.sin(time * 0.0013 + leaf.y * 0.02) * leaf.drift * dt;
+            leaf.angle += leaf.spin * dt;
+            if (leaf.y >= leaf.restY) {
+              leaf.y = leaf.restY;
+              leaf.settled = true;
+              leaf.spin = 0;
+              leaf.angle = Math.round(leaf.angle / (Math.PI / 8)) * (Math.PI / 8);
+            }
+          }
+          drawAcerLeaf(leaf);
+        }
+      }
+
+      function drawTatamiPanel(x, y, w, h, direction, time) {
+        const grad = pondCtx.createLinearGradient(x, y, x + (direction === "h" ? w : 0), y + (direction === "v" ? h : 0));
+        grad.addColorStop(0, "#c8c982");
+        grad.addColorStop(0.5, "#e1dda2");
+        grad.addColorStop(1, "#b8b06f");
+        pondCtx.fillStyle = grad;
+        pondCtx.fillRect(x, y, w, h);
+
+        pondCtx.save();
+        pondCtx.beginPath();
+        pondCtx.rect(x, y, w, h);
+        pondCtx.clip();
+        pondCtx.globalAlpha = 0.22;
+        pondCtx.strokeStyle = "#fff1b4";
+        pondCtx.lineWidth = 1;
+        const step = Math.max(4, pondW * 0.008);
+        if (direction === "h") {
+          for (let yy = y; yy < y + h; yy += step) {
+            pondCtx.beginPath();
+            pondCtx.moveTo(x, yy + Math.sin(yy * 0.08 + time * 0.0003) * 1.2);
+            pondCtx.lineTo(x + w, yy + Math.sin(yy * 0.08 + 2) * 1.2);
+            pondCtx.stroke();
+          }
+          pondCtx.globalAlpha = 0.13;
+          pondCtx.strokeStyle = "#5e5635";
+          for (let xx = x; xx < x + w; xx += step * 2.6) {
+            pondCtx.beginPath();
+            pondCtx.moveTo(xx, y);
+            pondCtx.lineTo(xx + Math.sin(xx * 0.03) * 1.2, y + h);
+            pondCtx.stroke();
+          }
+        } else {
+          for (let xx = x; xx < x + w; xx += step) {
+            pondCtx.beginPath();
+            pondCtx.moveTo(xx + Math.sin(xx * 0.08 + time * 0.0003) * 1.2, y);
+            pondCtx.lineTo(xx + Math.sin(xx * 0.08 + 2) * 1.2, y + h);
+            pondCtx.stroke();
+          }
+          pondCtx.globalAlpha = 0.13;
+          pondCtx.strokeStyle = "#5e5635";
+          for (let yy = y; yy < y + h; yy += step * 2.6) {
+            pondCtx.beginPath();
+            pondCtx.moveTo(x, yy);
+            pondCtx.lineTo(x + w, yy + Math.sin(yy * 0.03) * 1.2);
+            pondCtx.stroke();
+          }
+        }
+        pondCtx.restore();
+
+        pondCtx.strokeStyle = "rgba(255, 246, 186, 0.24)";
+        pondCtx.lineWidth = Math.max(1, pondW * 0.002);
+        pondCtx.strokeRect(x + 2, y + 2, w - 4, h - 4);
+      }
+
+      function drawAcerLeaf(leaf) {
+        const s = leaf.size;
+        const px = (x, y, w, h) => pondCtx.fillRect(x * s, y * s, w * s, h * s);
+        const poly = (points) => {
+          pondCtx.beginPath();
+          pondCtx.moveTo(points[0][0] * s, points[0][1] * s);
+          for (let i = 1; i < points.length; i += 1) {
+            pondCtx.lineTo(points[i][0] * s, points[i][1] * s);
+          }
+          pondCtx.closePath();
+          pondCtx.fill();
+        };
+
+        pondCtx.save();
+        pondCtx.translate(leaf.x, leaf.y);
+        pondCtx.rotate(leaf.angle);
+        pondCtx.globalAlpha = 0.86;
+        pondCtx.fillStyle = "rgba(67, 55, 35, 0.18)";
+        px(-4.5, 5.4, 9, 1.1);
+        pondCtx.fillStyle = leaf.color;
+
+        poly([
+          [0, -7],
+          [1.1, -3.4],
+          [0.45, -0.6],
+          [-0.45, -0.6],
+          [-1.1, -3.4],
+        ]);
+        poly([
+          [-3.8, -5.1],
+          [-1.15, -2.7],
+          [-0.65, -0.45],
+          [-1.9, 0.25],
+          [-4.9, -2.1],
+        ]);
+        poly([
+          [3.8, -5.1],
+          [1.15, -2.7],
+          [0.65, -0.45],
+          [1.9, 0.25],
+          [4.9, -2.1],
+        ]);
+        poly([
+          [-6.2, -0.85],
+          [-2.1, -0.75],
+          [-0.8, 0.55],
+          [-2.4, 1.65],
+          [-6.1, 1.25],
+        ]);
+        poly([
+          [6.2, -0.85],
+          [2.1, -0.75],
+          [0.8, 0.55],
+          [2.4, 1.65],
+          [6.1, 1.25],
+        ]);
+        poly([
+          [-3.7, 2.1],
+          [-1.2, 1.0],
+          [-0.35, 2.1],
+          [-1.3, 3.75],
+          [-3.8, 4.15],
+        ]);
+        poly([
+          [3.7, 2.1],
+          [1.2, 1.0],
+          [0.35, 2.1],
+          [1.3, 3.75],
+          [3.8, 4.15],
+        ]);
+        poly([
+          [-1.4, -0.2],
+          [1.4, -0.2],
+          [1.0, 4.8],
+          [0.25, 5.9],
+          [-0.25, 5.9],
+          [-1.0, 4.8],
+        ]);
+
+        pondCtx.fillStyle = "rgba(255, 174, 42, 0.42)";
+        poly([
+          [0, -5.8],
+          [0.45, -2.7],
+          [0.15, 3.6],
+          [-0.15, 3.6],
+          [-0.45, -2.7],
+        ]);
+        px(-4.7, 0.1, 2.7, 0.8);
+        px(2.0, 0.1, 2.7, 0.8);
+
+        pondCtx.fillStyle = "rgba(89, 54, 28, 0.72)";
+        px(-0.3, 2.4, 0.6, 5.6);
+        pondCtx.restore();
+      }
+
       function setupLevel(index) {
+        window.clearTimeout(completeTimer);
         levelIndex = (index + levels.length) % levels.length;
         level = levels[levelIndex];
         raked = new Set();
@@ -529,11 +965,49 @@
         activeStroke = [];
         hintMove = null;
         hintsLeft = 3;
+        resetRecommended = false;
+        positionHighlight = false;
         rakeVisible = true;
+        if (levelIndex !== 1) {
+          acerLeaves.length = 0;
+          lastLeafSpawn = 0;
+        }
         levelLabel.textContent = level.name;
         updateHintCounter();
-        showMessage("Tap the rake to begin.");
+        showMessage("Tap the rake to begin.", 0);
         draw();
+      }
+
+      function levelFromLocation() {
+        if (window.location.pathname.includes("garden-2")) return 1;
+        if (new URLSearchParams(window.location.search).get("garden") === "2") return 1;
+        return 0;
+      }
+
+      function levelPath(index) {
+        return index === 1 ? "/garden-2/" : "/";
+      }
+
+      function replaceLevelPath(index) {
+        if (window.history?.replaceState) {
+          window.history.replaceState({}, "", levelPath(index));
+        }
+      }
+
+      function goToLevel(index) {
+        if (window.history?.pushState) {
+          window.history.pushState({}, "", levelPath(index));
+        }
+        setupLevel(index);
+      }
+
+      function scheduleCompletionTransition() {
+        window.clearTimeout(completeTimer);
+        if (levelIndex >= levels.length - 1) return;
+        completeTimer = window.setTimeout(() => {
+          showMessage("Opening Garden 2.");
+          window.setTimeout(() => goToLevel(levelIndex + 1), 900);
+        }, 1600);
       }
 
       function boardMetrics() {
@@ -602,6 +1076,7 @@
           return false;
         }
         hintMove = null;
+        resetRecommended = false;
         result.cells.forEach((tile) => raked.add(key(tile.x, tile.y)));
         const move = { from: { ...current }, to: { ...to }, cells: result.cells };
         path.push(move);
@@ -609,6 +1084,7 @@
         current = { ...to };
         if (isComplete()) {
           showMessage("Garden complete. The sand is fully raked.");
+          scheduleCompletionTransition();
         }
         draw();
         return true;
@@ -631,11 +1107,13 @@
         return Math.round((raked.size / total) * 100);
       }
 
-      function showMessage(text) {
+      function showMessage(text, duration = 1700) {
         message.textContent = text;
         message.classList.add("show");
         window.clearTimeout(noticeTimer);
-        noticeTimer = window.setTimeout(() => message.classList.remove("show"), 1700);
+        if (duration > 0) {
+          noticeTimer = window.setTimeout(() => message.classList.remove("show"), duration);
+        }
       }
 
       function hintsLeftText() {
@@ -751,7 +1229,7 @@
 
       function showHint() {
         if (rakeVisible) {
-          showMessage("Tap the rake to begin.");
+          showMessage("Tap the rake to begin.", 0);
           return;
         }
         if (hintsLeft <= 0) {
@@ -764,7 +1242,8 @@
 
         if (hint.status === "stuck") {
           hintMove = null;
-          showMessage("I see no paths please restart");
+          resetRecommended = true;
+          showMessage("I see no paths. Reset or Undo is recommended.");
           draw();
           return;
         }
@@ -776,7 +1255,8 @@
         }
         if (hint.status === "unwinnable") {
           hintMove = null;
-          showMessage("No winning path from here. Reset is safest.");
+          resetRecommended = true;
+          showMessage("No winning path from here. Reset or Undo is recommended.");
           draw();
           return;
         }
@@ -816,12 +1296,13 @@
         const size = cell * level.size;
         ctx.fillStyle = "#d8cfbd";
         ctx.fillRect(boardLeft, boardTop, size, size);
-        if (rakeVisible) {
-          ctx.fillStyle = "rgba(168, 72, 52, 0.24)";
+        if (rakeVisible || positionHighlight) {
+          ctx.fillStyle = positionHighlight ? "rgba(218, 154, 45, 0.32)" : "rgba(168, 72, 52, 0.24)";
           ctx.fillRect(boardLeft + current.x * cell, boardTop + current.y * cell, cell, cell);
-          ctx.strokeStyle = "rgba(146, 54, 38, 0.42)";
-          ctx.lineWidth = Math.max(2, cell * 0.035);
-          ctx.strokeRect(boardLeft + current.x * cell + 2, boardTop + current.y * cell + 2, cell - 4, cell - 4);
+          ctx.strokeStyle = positionHighlight ? "rgba(230, 167, 45, 0.92)" : "rgba(146, 54, 38, 0.42)";
+          ctx.lineWidth = Math.max(2, cell * (positionHighlight ? 0.06 : 0.035));
+          const inset = positionHighlight ? 5 : 2;
+          ctx.strokeRect(boardLeft + current.x * cell + inset, boardTop + current.y * cell + inset, cell - inset * 2, cell - inset * 2);
         }
         ctx.strokeStyle = "#8e775b";
         ctx.lineWidth = 6;
@@ -1121,13 +1602,119 @@
       }
 
       function drawObstacles() {
+        ctx.save();
+        ctx.globalAlpha *= itemAlpha();
         for (const [id, type] of obstacles) {
           const [x, y] = id.split(",").map(Number);
           const [kind, variant = "round"] = type.split(":");
           if (kind === "house") drawStoneLantern(x, y, variant);
           else if (kind === "bonsai") drawBonsai(x, y, variant);
+          else if (kind === "pond" && variant === "koi") drawGardenPond(x, y);
+          else if (kind === "pond") continue;
           else drawRock(x, y, variant);
         }
+        ctx.restore();
+      }
+
+      function itemAlpha() {
+        if (!document.body.classList.contains("intro")) return 1;
+        const elapsed = animationTime - itemFadeStart;
+        return Math.max(0, Math.min(1, elapsed / 900));
+      }
+
+      function drawGardenPond(x, y) {
+        const w = cell * 3;
+        const h = cell * 2;
+        const cx = boardLeft + x * cell + w / 2;
+        const cy = boardTop + y * cell + h / 2;
+        const t = animationTime * 0.001;
+        const topW = w * 0.78;
+        const topH = h * 0.58;
+        const depth = h * 0.18;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+
+        ctx.fillStyle = "rgba(64, 75, 62, 0.18)";
+        ctx.fillRect(-topW * 0.48, topH * 0.36, topW * 0.96, h * 0.16);
+
+        ctx.fillStyle = "#4c5e58";
+        ctx.beginPath();
+        ctx.moveTo(-topW / 2, -topH / 2);
+        ctx.lineTo(topW / 2, -topH / 2);
+        ctx.lineTo(topW / 2, topH / 2);
+        ctx.lineTo(-topW / 2, topH / 2);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#3f4d49";
+        ctx.beginPath();
+        ctx.moveTo(-topW / 2, topH / 2);
+        ctx.lineTo(topW / 2, topH / 2);
+        ctx.lineTo(topW * 0.42, topH / 2 + depth);
+        ctx.lineTo(-topW * 0.42, topH / 2 + depth);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#66736a";
+        ctx.fillRect(-topW * 0.43, -topH * 0.39, topW * 0.86, topH * 0.78);
+
+        ctx.fillStyle = "#247996";
+        ctx.fillRect(-topW * 0.36, -topH * 0.29, topW * 0.72, topH * 0.58);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-topW * 0.36, -topH * 0.29, topW * 0.72, topH * 0.58);
+        ctx.clip();
+        ctx.strokeStyle = "rgba(183, 224, 226, 0.42)";
+        ctx.lineWidth = Math.max(1, cell * 0.02);
+        ctx.lineCap = "round";
+        for (let i = -3; i <= 3; i += 1) {
+          ctx.beginPath();
+          for (let px = -topW * 0.35; px <= topW * 0.36; px += cell * 0.12) {
+            const py = i * topH * 0.08 + Math.sin(px * 0.045 + t * 2.2 + i) * cell * 0.04;
+            if (px === -topW * 0.35) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+        }
+
+        const tinyKoi = [
+          { phase: 0.2, speed: 0.9, color: "#f4eee4", spot: "#df5522" },
+          { phase: 2.2, speed: 1.12, color: "#edd060", spot: "#f4eee4" },
+          { phase: 4.1, speed: 0.78, color: "#f2eee8", spot: "#cc4420" },
+        ];
+
+        for (const fish of tinyKoi) {
+          const u = Math.sin(t * fish.speed + fish.phase);
+          const v = Math.sin(t * fish.speed * 0.72 + fish.phase * 1.7);
+          const du = Math.cos(t * fish.speed + fish.phase) * fish.speed;
+          const dv = Math.cos(t * fish.speed * 0.72 + fish.phase * 1.7) * fish.speed * 0.72;
+          const fx = u * topW * 0.26;
+          const fy = v * topH * 0.16;
+          const angle = Math.atan2(dv * topH, du * topW) + Math.PI / 2;
+
+          ctx.save();
+          ctx.translate(fx, fy);
+          ctx.rotate(angle);
+          ctx.globalAlpha = 0.72;
+          ctx.fillStyle = fish.color;
+          ctx.fillRect(-cell * 0.03, -cell * 0.08, cell * 0.06, cell * 0.14);
+          ctx.fillRect(-cell * 0.045, -cell * 0.045, cell * 0.09, cell * 0.08);
+          ctx.fillStyle = fish.spot;
+          ctx.fillRect(-cell * 0.018, -cell * 0.05, cell * 0.036, cell * 0.05);
+          ctx.fillStyle = "rgba(233, 229, 220, 0.9)";
+          ctx.fillRect(-cell * 0.04, cell * 0.055, cell * 0.032, cell * 0.04);
+          ctx.fillRect(cell * 0.008, cell * 0.055, cell * 0.032, cell * 0.04);
+          ctx.restore();
+        }
+        ctx.restore();
+
+        ctx.fillStyle = "#7d8a73";
+        ctx.fillRect(-topW * 0.47, -topH * 0.48, cell * 0.18, cell * 0.08);
+        ctx.fillStyle = "#95a081";
+        ctx.fillRect(topW * 0.36, topH * 0.43, cell * 0.16, cell * 0.07);
+        ctx.restore();
       }
 
       function drawBonsai(x, y) {
@@ -1199,6 +1786,7 @@
         if (!rakeVisible) return;
         const c = tileCenter(current);
         ctx.save();
+        ctx.globalAlpha *= itemAlpha();
         ctx.translate(c.x, c.y);
         ctx.rotate(-0.62);
         ctx.lineCap = "round";
@@ -1270,21 +1858,28 @@
         drawObstacles();
         drawZenRake();
         progressBar.style.width = `${progress()}%`;
-        resetButton.classList.toggle("stuck", isStuck());
+        const needsRecovery = isStuck() || resetRecommended;
+        resetButton.classList.toggle("stuck", needsRecovery);
+        undoButton.classList.toggle("stuck", needsRecovery && path.length > 0);
       }
 
       canvas.addEventListener("pointerdown", (event) => {
         const point = canvasPoint(event);
         const tile = tileAtCanvasPoint(point.x, point.y);
         if (!tile || tile.x !== current.x || tile.y !== current.y) {
-          showMessage("Start from the rake.");
+          positionHighlight = true;
+          showMessage("Start from the previously raked position.");
+          draw();
           return;
         }
         canvas.setPointerCapture(event.pointerId);
+        positionHighlight = false;
         dragStart = { ...current };
         activeStroke = [];
         rakeVisible = false;
         dragPoint = point;
+        message.classList.remove("show");
+        window.clearTimeout(noticeTimer);
         draw();
       });
 
@@ -1325,6 +1920,7 @@
           return;
         }
         hintMove = null;
+        resetRecommended = false;
         last.cells.forEach((tile) => raked.delete(key(tile.x, tile.y)));
         current = { ...last.from };
         if (path.length === 0) rakeVisible = true;
@@ -1332,7 +1928,9 @@
         draw();
       });
       window.addEventListener("pointerdown", (event) => {
+        if (event.target.closest?.(".start-panel")) return;
         if (event.target.closest?.(".stage")) return;
+        if (levelIndex === 1) return;
         callKoiTo(event.clientX, event.clientY);
       });
 
@@ -1340,8 +1938,32 @@
         resizePond();
         draw();
       });
+      window.addEventListener("popstate", () => setupLevel(levelFromLocation()));
       paperTexture.addEventListener("load", draw);
-      setupLevel(0);
+      const startingLevel = levelFromLocation();
+      setupLevel(startingLevel);
+      if (startingLevel > 0 || window.location.search.includes("garden=2")) {
+        replaceLevelPath(startingLevel);
+      }
+      function finishIntro() {
+        if (!document.body.classList.contains("intro")) return;
+        document.body.classList.remove("intro");
+        document.body.classList.add("intro-done");
+        showMessage("Tap the rake to begin.", 0);
+      }
+      function startIntro() {
+        if (!document.body.classList.contains("prestart")) return;
+        document.body.classList.remove("prestart");
+        document.body.classList.add("intro");
+        itemFadeStart = (animationTime || performance.now()) + 1520;
+        window.setTimeout(finishIntro, 2460);
+      }
+      startButton.addEventListener("click", startIntro);
+      document.querySelector(".stage").addEventListener("animationend", (event) => {
+        if (event.animationName === "unfurl-paper") {
+          window.setTimeout(finishIntro, 560);
+        }
+      });
 
       function animate(timestamp) {
         drawPond(timestamp);
