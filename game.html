@@ -1,0 +1,2004 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Zen Puzzle Garden</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #1a6286;
+        color: #f8f4e8;
+      }
+
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100svh;
+        overflow: hidden;
+        background: #1a6286;
+        touch-action: none;
+      }
+
+      #pond {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        width: 100%;
+        height: 100%;
+        image-rendering: pixelated;
+        pointer-events: none;
+      }
+
+      .app {
+        position: relative;
+        z-index: 1;
+        min-height: 100svh;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 10px;
+        padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+      }
+
+      .topbar {
+        width: min(100%, 440px);
+        margin: 0 auto;
+        display: grid;
+        gap: 8px;
+        transition:
+          opacity 420ms ease,
+          transform 420ms ease;
+      }
+
+      .prestart .topbar,
+      .intro .topbar {
+        opacity: 0;
+        transform: translateY(-8px);
+        pointer-events: none;
+      }
+
+      .intro-done .topbar {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .title-row {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 1.55rem;
+        line-height: 1;
+        font-weight: 800;
+      }
+
+      .level {
+        color: #e7d5a8;
+        font-size: 0.82rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .meter {
+        height: 10px;
+        overflow: hidden;
+        border: 1px solid rgba(248, 244, 232, 0.26);
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.22);
+      }
+
+      .meter span {
+        display: block;
+        height: 100%;
+        width: 0%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #d7aa55, #ece3c5);
+        transition: width 160ms ease;
+      }
+
+      .board-wrap {
+        display: grid;
+        place-items: center;
+        min-height: 0;
+      }
+
+      .stage {
+        width: min(100%, 430px);
+        aspect-ratio: 10 / 14;
+        position: relative;
+        border: 2px solid #90633f;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+        background:
+          linear-gradient(rgba(255, 252, 242, 0.14), rgba(255, 252, 242, 0.14)),
+          url("assets/zen-paper.webp") center / cover,
+          #d8cfbd;
+        transform-origin: top center;
+      }
+
+      .prestart .stage {
+        opacity: 0;
+        transform: translateY(12px) scale(0.96);
+        pointer-events: none;
+      }
+
+      .intro .stage {
+        opacity: 1;
+        animation:
+          paper-fade-in 360ms ease both,
+          unfurl-paper 1250ms cubic-bezier(0.2, 0.86, 0.2, 1) 240ms both;
+      }
+
+      .start-panel {
+        position: fixed;
+        z-index: 4;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        pointer-events: none;
+      }
+
+      .start-card {
+        width: min(88vw, 460px);
+        display: grid;
+        justify-items: center;
+        gap: 14px;
+        pointer-events: none;
+      }
+
+      .title-image {
+        width: min(100%, 420px);
+        height: auto;
+        display: block;
+        border-radius: 8px;
+        filter: drop-shadow(0 16px 28px rgba(6, 31, 47, 0.3));
+      }
+
+      .start-button {
+        min-height: 54px;
+        padding: 0 24px;
+        border-color: rgba(255, 252, 232, 0.36);
+        background: rgba(255, 251, 238, 0.9);
+        color: #2d2f28;
+        box-shadow: 0 14px 32px rgba(10, 38, 56, 0.28);
+        pointer-events: auto;
+      }
+
+      .feed-note {
+        margin: 0;
+        padding: 7px 12px;
+        border-radius: 999px;
+        background: rgba(9, 45, 65, 0.36);
+        color: #fff8e8;
+        font-size: 0.9rem;
+        font-weight: 800;
+        line-height: 1.2;
+        text-align: center;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+        box-shadow: 0 8px 18px rgba(7, 31, 48, 0.18);
+      }
+
+      body:not(.prestart) .start-panel {
+        opacity: 0;
+        transform: translateY(-8px);
+        transition:
+          opacity 220ms ease,
+          transform 220ms ease;
+        pointer-events: none;
+      }
+
+      .intro-done .start-panel {
+        display: none;
+      }
+
+      .stage::after {
+        content: "";
+        position: absolute;
+        z-index: 3;
+        left: -8px;
+        right: -8px;
+        top: 0;
+        height: 30px;
+        border-radius: 999px;
+        background:
+          linear-gradient(180deg, rgba(128, 88, 54, 0.28), rgba(255, 250, 235, 0.92) 42%, rgba(97, 65, 42, 0.3)),
+          url("assets/zen-paper.webp") center / cover;
+        box-shadow: 0 10px 16px rgba(62, 43, 29, 0.2);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .intro .stage::after {
+        animation: paper-roll 1250ms cubic-bezier(0.2, 0.86, 0.2, 1) 240ms both;
+      }
+
+      .intro #garden,
+      .intro .controls,
+      .intro .aim {
+        opacity: 0;
+        animation: fade-on-paper 520ms ease 1520ms both;
+      }
+
+      .intro-done #garden,
+      .intro-done .controls,
+      .intro-done .aim {
+        opacity: 1;
+      }
+
+      .intro .message {
+        opacity: 0 !important;
+      }
+
+      @keyframes paper-fade-in {
+        from {
+          opacity: 0;
+        }
+
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes unfurl-paper {
+        0% {
+          clip-path: inset(0 0 93% 0 round 8px);
+          transform: translateY(16px) scaleX(0.88);
+        }
+
+        56% {
+          clip-path: inset(0 0 24% 0 round 8px);
+          transform: translateY(4px) scaleX(0.98);
+        }
+
+        100% {
+          clip-path: inset(0 0 0 0 round 8px);
+          transform: translateY(0) scaleX(1);
+        }
+      }
+
+      @keyframes paper-roll {
+        0% {
+          top: 0;
+          opacity: 1;
+        }
+
+        78% {
+          opacity: 1;
+        }
+
+        100% {
+          top: calc(100% - 30px);
+          opacity: 0;
+        }
+      }
+
+      @keyframes fade-on-paper {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+        user-select: none;
+      }
+
+      .message {
+        position: absolute;
+        inset: auto 12px 12px;
+        min-height: 42px;
+        display: grid;
+        place-items: center;
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: rgba(28, 31, 25, 0.76);
+        color: #fff8e8;
+        font-size: 0.92rem;
+        font-weight: 700;
+        text-align: center;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(8px);
+        transition:
+          opacity 140ms ease,
+          transform 140ms ease;
+      }
+
+      .message.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .controls {
+        position: absolute;
+        z-index: 2;
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+
+      .aim {
+        position: absolute;
+        z-index: 2;
+        top: 66px;
+        left: 18px;
+        right: 18px;
+        min-height: 40px;
+        display: grid;
+        place-items: center;
+        padding: 8px 12px;
+        border: 1px solid rgba(92, 76, 54, 0.16);
+        border-radius: 8px;
+        background: rgba(255, 251, 238, 0.58);
+        color: #46382a;
+        font-size: 0.82rem;
+        font-weight: 760;
+        line-height: 1.25;
+        text-align: center;
+        box-shadow: 0 3px 10px rgba(35, 29, 20, 0.08);
+        backdrop-filter: blur(2px);
+        pointer-events: none;
+      }
+
+      button {
+        min-height: 44px;
+        border: 1px solid rgba(80, 70, 54, 0.2);
+        border-radius: 8px;
+        background: rgba(255, 251, 238, 0.78);
+        color: #3b3126;
+        font: inherit;
+        font-size: 0.95rem;
+        font-weight: 800;
+        box-shadow: 0 3px 10px rgba(35, 29, 20, 0.12);
+        backdrop-filter: blur(3px);
+      }
+
+      button:active {
+        transform: translateY(1px);
+        background: rgba(255, 251, 238, 0.94);
+      }
+
+      button.stuck {
+        border-color: rgba(154, 55, 37, 0.8);
+        background: rgba(190, 76, 52, 0.9);
+        color: #fff7ec;
+        box-shadow:
+          0 0 0 3px rgba(190, 76, 52, 0.24),
+          0 6px 16px rgba(88, 30, 20, 0.28);
+      }
+    </style>
+  </head>
+  <body class="prestart">
+    <canvas id="pond" aria-hidden="true"></canvas>
+    <div class="start-panel">
+      <div class="start-card">
+        <img class="title-image" src="assets/title-screen.png" alt="Max's Zen Garden puzzle" />
+        <button class="start-button" id="startButton" type="button">Click to start</button>
+        <p class="feed-note">or click on the water to feed fish</p>
+      </div>
+    </div>
+    <main class="app">
+      <header class="topbar">
+        <div class="title-row">
+          <h1>Zen Puzzle Garden</h1>
+          <div class="level" id="levelLabel">Garden 1</div>
+        </div>
+        <div class="meter" aria-label="raked sand progress"><span id="progressBar"></span></div>
+      </header>
+
+      <section class="board-wrap" aria-label="sand garden puzzle">
+        <div class="stage">
+          <canvas id="garden" width="900" height="1260"></canvas>
+          <div class="controls">
+            <button id="undoButton" type="button">Undo</button>
+            <button id="resetButton" type="button">Reset</button>
+            <button id="hintButton" type="button">Hint</button>
+          </div>
+          <div class="aim">Aim of the game is: drag your finger in the sand.<br />Fill up all the available spaces to win.</div>
+          <div class="message" id="message">Rake every open tile.</div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const pondCanvas = document.querySelector("#pond");
+      const pondCtx = pondCanvas.getContext("2d");
+      const canvas = document.querySelector("#garden");
+      const ctx = canvas.getContext("2d");
+      const message = document.querySelector("#message");
+      const progressBar = document.querySelector("#progressBar");
+      const levelLabel = document.querySelector("#levelLabel");
+      const resetButton = document.querySelector("#resetButton");
+      const undoButton = document.querySelector("#undoButton");
+      const hintButton = document.querySelector("#hintButton");
+      const startButton = document.querySelector("#startButton");
+      const paperTexture = new Image();
+      paperTexture.src = "assets/zen-paper.webp";
+
+      const directions = [
+        { x: 1, y: 0, label: "right" },
+        { x: -1, y: 0, label: "left" },
+        { x: 0, y: 1, label: "down" },
+        { x: 0, y: -1, label: "up" },
+      ];
+
+      const levels = [
+        {
+          name: "Garden 1",
+          size: 7,
+          start: [6, 6],
+          stones: [
+            [2, 5, "rock:mossy"],
+            [6, 5, "house:gate"],
+            [5, 2, "rock:flat"],
+            [4, 6, "rock:round"],
+            [2, 0, "house:tall"],
+            [6, 0, "rock:split"],
+            [3, 3, "bonsai:pine"],
+            [0, 3, "house:wide"],
+          ],
+        },
+        {
+          name: "Garden 2",
+          size: 8,
+          start: [7, 7],
+          stones: [
+            [2, 1, "rock:flat"],
+            [5, 4, "house:tall"],
+            [0, 4, "rock:mossy"],
+            [4, 6, "rock:round"],
+            [6, 2, "house:wide"],
+            [4, 7, "rock:split"],
+            [2, 0, "bonsai:pine"],
+            [1, 6, "house:gate"],
+            [4, 1, "rock:mossy"],
+            [2, 3, "pond:koi"],
+            [3, 3, "pond:block"],
+            [4, 3, "pond:block"],
+            [2, 4, "pond:block"],
+            [3, 4, "pond:block"],
+            [4, 4, "pond:block"],
+          ],
+        },
+      ];
+
+      let levelIndex = 0;
+      let level;
+      let cell;
+      let boardLeft;
+      let boardTop;
+      let raked;
+      let obstacles;
+      let path;
+      let current;
+      let dragStart = null;
+      let dragPoint = null;
+      let activeStroke = [];
+      let rakeVisible = true;
+      let noticeTimer = 0;
+      let animationTime = 0;
+      let hintMove = null;
+      let hintTimer = 0;
+      let hintsLeft = 5;
+      let easyMode = false;
+      let resetRecommended = false;
+      let positionHighlight = false;
+      let itemFadeStart = 0;
+      let completeTimer = 0;
+      let pondW = 0;
+      let pondH = 0;
+      let lastLeafSpawn = 0;
+      let konamiIndex = 0;
+      const ripples = [];
+      const acerLeaves = [];
+      const konamiCode = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
+      const koi = [
+        { x: 0.07, y: 0.34, angle: 0.2, targetAngle: 0.2, nextTurn: 0, speed: 18, phase: 0.2, alpha: 0.7, spot: "#ff5a1d", fin: "#c9b7af" },
+        { x: 0.18, y: 0.88, angle: -0.35, targetAngle: -0.35, nextTurn: 0, speed: 15, phase: 1.9, alpha: 0.62, spot: "#e24a18", fin: "#bba8a1" },
+        { x: 0.5, y: 0.13, angle: 0.7, targetAngle: 0.7, nextTurn: 0, speed: 14, phase: 3.4, alpha: 0.66, spot: "#ff6f22", fin: "#cfc0b8" },
+        { x: 0.82, y: 0.64, angle: -0.9, targetAngle: -0.9, nextTurn: 0, speed: 16, phase: 4.6, alpha: 0.64, spot: "#f26923", fin: "#d4c5bd" },
+        { x: 0.93, y: 0.42, angle: 1.15, targetAngle: 1.15, nextTurn: 0, speed: 13, phase: 5.8, alpha: 0.58, spot: "#d64217", fin: "#b9a69f" },
+      ];
+
+      function key(x, y) {
+        return `${x},${y}`;
+      }
+
+      function resizePond() {
+        const scale = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        const nextW = Math.ceil(window.innerWidth * scale);
+        const nextH = Math.ceil(window.innerHeight * scale);
+        if (pondW === nextW && pondH === nextH) return;
+        pondW = nextW;
+        pondH = nextH;
+        pondCanvas.width = pondW;
+        pondCanvas.height = pondH;
+      }
+
+      function drawPixelKoi(fish, time) {
+        const scale = Math.max(2.6, Math.min(4.4, pondW / 260));
+        const wag = Math.round(Math.sin(time / 130 + fish.phase) * scale * 0.8);
+        const fin = Math.round(Math.sin(time / 170 + fish.phase) * scale * 0.45);
+        const px = (x, y, w, h) => pondCtx.fillRect(x * scale, y * scale, w * scale, h * scale);
+
+        pondCtx.save();
+        pondCtx.translate(fish.x * pondW, fish.y * pondH);
+        pondCtx.rotate(fish.angle + Math.sin(time / 900 + fish.phase) * 0.04);
+        pondCtx.globalAlpha = fish.alpha;
+
+        pondCtx.fillStyle = "rgba(8, 42, 62, 0.2)";
+        px(-5, 4, 10, 22);
+
+        pondCtx.fillStyle = "rgba(240, 238, 230, 0.98)";
+        px(-3, -18, 6, 3);
+        px(-5, -15, 9, 5);
+        px(-6, -10, 10, 9);
+        px(-5, -1, 9, 9);
+        px(-4, 8, 7, 8);
+        px(-3, 16, 5, 7);
+        px(-2, 22, 4, 4);
+
+        pondCtx.fillStyle = fish.spot;
+        px(-2, -16, 3, 4);
+        px(-4, -12, 5, 7);
+        px(-3, -5, 4, 6);
+        px(0, 0, 3, 4);
+        px(1, 5, 3, 4);
+        px(-2, 12, 3, 5);
+        px(0, 21, 2, 3);
+
+        pondCtx.fillStyle = "rgba(196, 49, 18, 0.95)";
+        px(-6, -10, 2, 4);
+        px(2, -8, 2, 5);
+        px(-3, 17, 2, 4);
+
+        pondCtx.fillStyle = fish.fin;
+        px(-10, -2 + fin / scale, 4, 7);
+        px(4, -3 - fin / scale, 5, 7);
+        px(-5, 8, 3, 7);
+        px(2, 9, 3, 6);
+
+        pondCtx.fillStyle = "rgba(245, 241, 234, 0.95)";
+        px(-2 + wag / scale, 23, 4, 4);
+        px(-5 + wag / scale, 26, 4, 4);
+        px(1 + wag / scale, 26, 4, 4);
+        px(-7 + wag / scale, 29, 3, 4);
+        px(4 + wag / scale, 29, 3, 4);
+
+        pondCtx.fillStyle = fish.spot;
+        px(-1 + wag / scale, 24, 2, 2);
+        pondCtx.restore();
+      }
+
+      function angleDelta(from, to) {
+        return Math.atan2(Math.sin(to - from), Math.cos(to - from));
+      }
+
+      function chooseKoiHeading(fish, time, towardCenter = false) {
+        if (towardCenter) {
+          const dx = 0.5 - fish.x;
+          const dy = 0.5 - fish.y;
+          fish.targetAngle = Math.atan2(dx, -dy);
+        } else {
+          fish.targetAngle = Math.random() * Math.PI * 2 - Math.PI;
+        }
+        fish.nextTurn = time + 1800 + Math.random() * 2600;
+      }
+
+      function drawRipples(time) {
+        for (let i = ripples.length - 1; i >= 0; i -= 1) {
+          const ripple = ripples[i];
+          const age = time - ripple.start;
+          if (age > 1200) {
+            ripples.splice(i, 1);
+            continue;
+          }
+
+          const progress = age / 1200;
+          pondCtx.save();
+          pondCtx.globalAlpha = (1 - progress) * 0.46;
+          pondCtx.strokeStyle = "#d2f0f4";
+          pondCtx.lineWidth = Math.max(2, pondW / 360) * (1 - progress * 0.35);
+          for (let ring = 0; ring < 3; ring += 1) {
+            pondCtx.beginPath();
+            pondCtx.arc(
+              ripple.x * pondW,
+              ripple.y * pondH,
+              (18 + ring * 18 + progress * 82) * (pondW / 430),
+              0,
+              Math.PI * 2,
+            );
+            pondCtx.stroke();
+          }
+          pondCtx.restore();
+        }
+      }
+
+      function callKoiTo(clientX, clientY) {
+        const rect = pondCanvas.getBoundingClientRect();
+        const x = (clientX - rect.left) / rect.width;
+        const y = (clientY - rect.top) / rect.height;
+        const target = {
+          x: Math.max(0.02, Math.min(0.98, x)),
+          y: Math.max(0.02, Math.min(0.98, y)),
+        };
+
+        ripples.push({ ...target, start: animationTime || performance.now() });
+        if (ripples.length > 6) ripples.shift();
+
+        for (const fish of koi) {
+          fish.targetX = target.x;
+          fish.targetY = target.y;
+          fish.rushUntil = (animationTime || performance.now()) + 5200;
+          const dx = target.x - fish.x;
+          const dy = target.y - fish.y;
+          fish.targetAngle = Math.atan2(dx, -dy);
+          fish.nextTurn = fish.rushUntil + Math.random() * 1200;
+        }
+      }
+
+      function drawPond(timestamp) {
+        resizePond();
+        const time = timestamp || 0;
+        const dt = Math.min(0.04, Math.max(0.001, (time - animationTime) / 1000 || 0.016));
+
+        if (levelIndex === 1) {
+          drawShojiGardenBackground(time, dt);
+          return;
+        }
+
+        pondCtx.clearRect(0, 0, pondW, pondH);
+        const gradient = pondCtx.createLinearGradient(0, 0, pondW, pondH);
+        gradient.addColorStop(0, "#287fa8");
+        gradient.addColorStop(0.52, "#1f6f9b");
+        gradient.addColorStop(1, "#164e78");
+        pondCtx.fillStyle = gradient;
+        pondCtx.fillRect(0, 0, pondW, pondH);
+
+        pondCtx.save();
+        pondCtx.globalAlpha = 0.16;
+        pondCtx.strokeStyle = "#b8e3ee";
+        pondCtx.lineWidth = Math.max(1, pondW / 420);
+        for (let y = -24; y < pondH + 24; y += 34) {
+          pondCtx.beginPath();
+          for (let x = -20; x < pondW + 24; x += 18) {
+            const wave = Math.sin(x * 0.018 + y * 0.024 + time * 0.00155) * 5;
+            if (x === -20) pondCtx.moveTo(x, y + wave);
+            else pondCtx.lineTo(x, y + wave);
+          }
+          pondCtx.stroke();
+        }
+        pondCtx.restore();
+
+        pondCtx.fillStyle = "rgba(7, 31, 48, 0.1)";
+        pondCtx.fillRect(0, 0, pondW, pondH);
+
+        drawRipples(time);
+
+        for (const fish of koi) {
+          const isRushing = time < (fish.rushUntil || 0) && typeof fish.targetX === "number";
+          if (isRushing) {
+            const dx = fish.targetX - fish.x;
+            const dy = fish.targetY - fish.y;
+            fish.targetAngle = Math.atan2(dx, -dy);
+            if (Math.hypot(dx, dy) < 0.018 && time > fish.rushUntil - 1200) fish.rushUntil = 0;
+          } else if (time > fish.nextTurn) {
+            chooseKoiHeading(fish, time);
+          }
+
+          const margin = 0.08;
+          const outside = fish.x < margin || fish.x > 1 - margin || fish.y < margin || fish.y > 1 - margin;
+          if (outside && !isRushing) chooseKoiHeading(fish, time, true);
+
+          const turnRate = isRushing ? 3.6 : 1.4;
+          const speed = fish.speed * (isRushing ? 7.2 : 1);
+          fish.angle += angleDelta(fish.angle, fish.targetAngle) * Math.min(1, dt * turnRate);
+          fish.x += Math.sin(fish.angle) * speed * dt / pondW;
+          fish.y -= Math.cos(fish.angle) * speed * dt / pondH;
+
+          if (fish.x < -0.12) fish.x = 1.12;
+          else if (fish.x > 1.12) fish.x = -0.12;
+          if (fish.y < -0.12) fish.y = 1.12;
+          else if (fish.y > 1.12) fish.y = -0.12;
+          drawPixelKoi(fish, time);
+        }
+      }
+
+      function drawShojiGardenBackground(time, dt) {
+        pondCtx.clearRect(0, 0, pondW, pondH);
+
+        const base = pondCtx.createLinearGradient(0, 0, pondW, pondH);
+        base.addColorStop(0, "#d7d29a");
+        base.addColorStop(0.5, "#c8c284");
+        base.addColorStop(1, "#aaa06e");
+        pondCtx.fillStyle = base;
+        pondCtx.fillRect(0, 0, pondW, pondH);
+
+        const rail = Math.max(8, pondW * 0.014);
+        const panels = [
+          [0, 0, pondW * 0.5, pondH * 0.3, "h"],
+          [0, pondH * 0.3, pondW * 0.25, pondH * 0.58, "v"],
+          [pondW * 0.25, pondH * 0.3, pondW * 0.25, pondH * 0.58, "v"],
+          [pondW * 0.5, 0, pondW * 0.26, pondH * 0.66, "v"],
+          [pondW * 0.76, 0, pondW * 0.24, pondH * 0.66, "v"],
+          [pondW * 0.5, pondH * 0.66, pondW * 0.5, pondH * 0.22, "h"],
+          [0, pondH * 0.88, pondW, pondH * 0.12, "h"],
+        ];
+
+        for (const [x, y, w, h, direction] of panels) {
+          drawTatamiPanel(x + rail * 0.35, y + rail * 0.35, w - rail * 0.7, h - rail * 0.7, direction, time);
+        }
+
+        pondCtx.fillStyle = "rgba(82, 70, 43, 0.68)";
+        pondCtx.fillRect(0, pondH * 0.3 - rail / 2, pondW * 0.5, rail);
+        pondCtx.fillRect(pondW * 0.5 - rail / 2, 0, rail, pondH);
+        pondCtx.fillRect(pondW * 0.76 - rail / 2, 0, rail, pondH * 0.66);
+        pondCtx.fillRect(pondW * 0.5, pondH * 0.66 - rail / 2, pondW * 0.5, rail);
+        pondCtx.fillRect(pondW * 0.25 - rail / 2, pondH * 0.3, rail, pondH * 0.58);
+        pondCtx.fillRect(0, pondH * 0.88 - rail / 2, pondW, rail);
+
+        pondCtx.save();
+        pondCtx.globalAlpha = 0.16;
+        pondCtx.fillStyle = "#fff5bf";
+        pondCtx.fillRect(0, 0, pondW, pondH);
+        pondCtx.restore();
+
+        pondCtx.fillStyle = "rgba(84, 74, 48, 0.1)";
+        pondCtx.fillRect(0, 0, pondW, pondH);
+
+        if (time - lastLeafSpawn > 1500) {
+          lastLeafSpawn = time;
+          const palette = ["#a82022", "#c73324", "#df4b24", "#ec7a22", "#d99d28", "#7b983c", "#438142"];
+          acerLeaves.push({
+            x: Math.random() * pondW,
+            y: -30,
+            restY: pondH * (0.28 + Math.random() * 0.64),
+            size: Math.max(2.2, Math.min(4.4, pondW / 260)) * (0.8 + Math.random() * 0.35),
+            drift: (Math.random() - 0.5) * pondW * 0.035,
+            speed: 22 + Math.random() * 22,
+            spin: (Math.random() - 0.5) * 1.35,
+            angle: Math.random() * Math.PI * 2,
+            color: palette[Math.floor(Math.random() * palette.length)],
+            settled: false,
+          });
+          const settledLeaves = acerLeaves.filter((leaf) => leaf.settled);
+          if (acerLeaves.length > 24 && settledLeaves.length > 10) {
+            const oldestSettled = acerLeaves.findIndex((leaf) => leaf.settled);
+            if (oldestSettled >= 0) acerLeaves.splice(oldestSettled, 1);
+          }
+        }
+
+        for (let i = acerLeaves.length - 1; i >= 0; i -= 1) {
+          const leaf = acerLeaves[i];
+          if (!leaf.settled) {
+            leaf.y += leaf.speed * dt;
+            leaf.x += Math.sin(time * 0.0013 + leaf.y * 0.02) * leaf.drift * dt;
+            leaf.angle += leaf.spin * dt;
+            if (leaf.y >= leaf.restY) {
+              leaf.y = leaf.restY;
+              leaf.settled = true;
+              leaf.spin = 0;
+              leaf.angle = Math.round(leaf.angle / (Math.PI / 8)) * (Math.PI / 8);
+            }
+          }
+          drawAcerLeaf(leaf);
+        }
+      }
+
+      function drawTatamiPanel(x, y, w, h, direction, time) {
+        const grad = pondCtx.createLinearGradient(x, y, x + (direction === "h" ? w : 0), y + (direction === "v" ? h : 0));
+        grad.addColorStop(0, "#c8c982");
+        grad.addColorStop(0.5, "#e1dda2");
+        grad.addColorStop(1, "#b8b06f");
+        pondCtx.fillStyle = grad;
+        pondCtx.fillRect(x, y, w, h);
+
+        pondCtx.save();
+        pondCtx.beginPath();
+        pondCtx.rect(x, y, w, h);
+        pondCtx.clip();
+        pondCtx.globalAlpha = 0.22;
+        pondCtx.strokeStyle = "#fff1b4";
+        pondCtx.lineWidth = 1;
+        const step = Math.max(4, pondW * 0.008);
+        if (direction === "h") {
+          for (let yy = y; yy < y + h; yy += step) {
+            pondCtx.beginPath();
+            pondCtx.moveTo(x, yy + Math.sin(yy * 0.08 + time * 0.0003) * 1.2);
+            pondCtx.lineTo(x + w, yy + Math.sin(yy * 0.08 + 2) * 1.2);
+            pondCtx.stroke();
+          }
+          pondCtx.globalAlpha = 0.13;
+          pondCtx.strokeStyle = "#5e5635";
+          for (let xx = x; xx < x + w; xx += step * 2.6) {
+            pondCtx.beginPath();
+            pondCtx.moveTo(xx, y);
+            pondCtx.lineTo(xx + Math.sin(xx * 0.03) * 1.2, y + h);
+            pondCtx.stroke();
+          }
+        } else {
+          for (let xx = x; xx < x + w; xx += step) {
+            pondCtx.beginPath();
+            pondCtx.moveTo(xx + Math.sin(xx * 0.08 + time * 0.0003) * 1.2, y);
+            pondCtx.lineTo(xx + Math.sin(xx * 0.08 + 2) * 1.2, y + h);
+            pondCtx.stroke();
+          }
+          pondCtx.globalAlpha = 0.13;
+          pondCtx.strokeStyle = "#5e5635";
+          for (let yy = y; yy < y + h; yy += step * 2.6) {
+            pondCtx.beginPath();
+            pondCtx.moveTo(x, yy);
+            pondCtx.lineTo(x + w, yy + Math.sin(yy * 0.03) * 1.2);
+            pondCtx.stroke();
+          }
+        }
+        pondCtx.restore();
+
+        pondCtx.strokeStyle = "rgba(255, 246, 186, 0.24)";
+        pondCtx.lineWidth = Math.max(1, pondW * 0.002);
+        pondCtx.strokeRect(x + 2, y + 2, w - 4, h - 4);
+      }
+
+      function drawAcerLeaf(leaf) {
+        const s = leaf.size;
+        const px = (x, y, w, h) => pondCtx.fillRect(x * s, y * s, w * s, h * s);
+        const poly = (points) => {
+          pondCtx.beginPath();
+          pondCtx.moveTo(points[0][0] * s, points[0][1] * s);
+          for (let i = 1; i < points.length; i += 1) {
+            pondCtx.lineTo(points[i][0] * s, points[i][1] * s);
+          }
+          pondCtx.closePath();
+          pondCtx.fill();
+        };
+
+        pondCtx.save();
+        pondCtx.translate(leaf.x, leaf.y);
+        pondCtx.rotate(leaf.angle);
+        pondCtx.globalAlpha = 0.86;
+
+        pondCtx.fillStyle = "rgba(71, 57, 34, 0.16)";
+        poly([
+          [-4.4, 2.7],
+          [-1.9, 2.2],
+          [0, 2.55],
+          [2.2, 2.1],
+          [4.5, 2.85],
+          [2.15, 3.45],
+          [0, 3.2],
+          [-2.25, 3.5],
+        ]);
+
+        pondCtx.fillStyle = leaf.color;
+        poly([
+          [0, -7.4],
+          [0.75, -4.6],
+          [2.3, -6.2],
+          [2.15, -3.6],
+          [4.9, -4.55],
+          [3.55, -2.3],
+          [6.7, -2.25],
+          [4.2, -0.65],
+          [5.65, 1.0],
+          [3.05, 0.8],
+          [3.2, 3.05],
+          [1.35, 2.0],
+          [0.45, 5.1],
+          [0, 3.05],
+          [-0.45, 5.1],
+          [-1.35, 2.0],
+          [-3.2, 3.05],
+          [-3.05, 0.8],
+          [-5.65, 1.0],
+          [-4.2, -0.65],
+          [-6.7, -2.25],
+          [-3.55, -2.3],
+          [-4.9, -4.55],
+          [-2.15, -3.6],
+          [-2.3, -6.2],
+          [-0.75, -4.6],
+        ]);
+
+        pondCtx.fillStyle = "rgba(255, 184, 54, 0.35)";
+        poly([
+          [0, -6.3],
+          [0.35, -3.8],
+          [0.18, 2.8],
+          [-0.18, 2.8],
+          [-0.35, -3.8],
+        ]);
+        pondCtx.strokeStyle = "rgba(255, 207, 84, 0.42)";
+        pondCtx.lineWidth = Math.max(1, s * 0.42);
+        pondCtx.lineCap = "round";
+        pondCtx.beginPath();
+        pondCtx.moveTo(0, 0);
+        pondCtx.lineTo(-4.5 * s, -1.55 * s);
+        pondCtx.moveTo(0, 0);
+        pondCtx.lineTo(4.5 * s, -1.55 * s);
+        pondCtx.moveTo(0, 0.4 * s);
+        pondCtx.lineTo(-2.2 * s, 2.15 * s);
+        pondCtx.moveTo(0, 0.4 * s);
+        pondCtx.lineTo(2.2 * s, 2.15 * s);
+        pondCtx.stroke();
+
+        pondCtx.fillStyle = "rgba(89, 54, 28, 0.72)";
+        px(-0.32, 2.8, 0.64, 3.2);
+        pondCtx.restore();
+      }
+
+      function setupLevel(index) {
+        window.clearTimeout(completeTimer);
+        levelIndex = (index + levels.length) % levels.length;
+        level = levels[levelIndex];
+        raked = new Set();
+        obstacles = new Map(level.stones.map(([x, y, type]) => [key(x, y), type]));
+        path = [];
+        current = { x: level.start[0], y: level.start[1] };
+        raked.add(key(current.x, current.y));
+        dragStart = null;
+        dragPoint = null;
+        activeStroke = [];
+        hintMove = null;
+        easyMode = isEasyMode();
+        hintsLeft = 5;
+        resetRecommended = false;
+        positionHighlight = false;
+        rakeVisible = true;
+        if (levelIndex !== 1) {
+          acerLeaves.length = 0;
+          lastLeafSpawn = 0;
+        }
+        levelLabel.textContent = level.name;
+        updateHintCounter();
+        showMessage("Tap the rake to begin.", 0);
+        draw();
+      }
+
+      function levelFromLocation() {
+        if (window.location.pathname.includes("garden-2")) return 1;
+        if (new URLSearchParams(window.location.search).get("garden") === "2") return 1;
+        return 0;
+      }
+
+      function isEasyMode() {
+        return window.location.hash.toLowerCase() === "#easy";
+      }
+
+      function unlockEasyMode() {
+        if (!easyMode) {
+          window.location.hash = "easy";
+        }
+        easyMode = true;
+        updateHintCounter();
+        showMessage("Easy mode unlocked. Unlimited hints.", 2200);
+      }
+
+      function levelPath(index) {
+        const hash = isEasyMode() ? "#easy" : "";
+        return `${index === 1 ? "/garden-2/" : "/"}${hash}`;
+      }
+
+      function replaceLevelPath(index) {
+        if (window.history?.replaceState) {
+          window.history.replaceState({}, "", levelPath(index));
+        }
+      }
+
+      function goToLevel(index) {
+        if (window.history?.pushState) {
+          window.history.pushState({}, "", levelPath(index));
+        }
+        setupLevel(index);
+      }
+
+      function scheduleCompletionTransition() {
+        window.clearTimeout(completeTimer);
+        if (levelIndex >= levels.length - 1) return;
+        completeTimer = window.setTimeout(() => {
+          showMessage("Opening Garden 2.");
+          window.setTimeout(() => goToLevel(levelIndex + 1), 900);
+        }, 1600);
+      }
+
+      function boardMetrics() {
+        const pad = canvas.width * 0.075;
+        const topBand = canvas.height * 0.16;
+        const usable = canvas.width - pad * 2;
+        cell = usable / level.size;
+        boardLeft = pad;
+        boardTop = topBand + (canvas.height - topBand - usable) * 0.5;
+      }
+
+      function tileAtCanvasPoint(px, py) {
+        const x = Math.floor((px - boardLeft) / cell);
+        const y = Math.floor((py - boardTop) / cell);
+        if (x < 0 || y < 0 || x >= level.size || y >= level.size) return null;
+        return { x, y };
+      }
+
+      function canvasPoint(event) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: ((event.clientX - rect.left) / rect.width) * canvas.width,
+          y: ((event.clientY - rect.top) / rect.height) * canvas.height,
+        };
+      }
+
+      function tileCenter(tile) {
+        return {
+          x: boardLeft + tile.x * cell + cell / 2,
+          y: boardTop + tile.y * cell + cell / 2,
+        };
+      }
+
+      function segmentCells(from, to) {
+        if (from.x === to.x && from.y === to.y) return null;
+        if (from.x !== to.x && from.y !== to.y) return null;
+        const dx = Math.sign(to.x - from.x);
+        const dy = Math.sign(to.y - from.y);
+        const cells = [];
+        let x = from.x + dx;
+        let y = from.y + dy;
+        while (x !== to.x || y !== to.y) {
+          cells.push({ x, y });
+          x += dx;
+          y += dy;
+        }
+        cells.push({ x: to.x, y: to.y });
+        return cells;
+      }
+
+      function validateMove(to) {
+        const cells = segmentCells(current, to);
+        if (!cells) return { ok: false, text: "No diagonal raking." };
+        for (const tile of cells) {
+          const id = key(tile.x, tile.y);
+          if (obstacles.has(id)) return { ok: false, text: "Something is blocking the rake." };
+          if (raked.has(id)) return { ok: false, text: "Do not cross raked sand." };
+        }
+        return { ok: true, cells };
+      }
+
+      function commitMove(to) {
+        const result = validateMove(to);
+        if (!result.ok) {
+          showMessage(result.text);
+          return false;
+        }
+        hintMove = null;
+        resetRecommended = false;
+        result.cells.forEach((tile) => raked.add(key(tile.x, tile.y)));
+        const move = { from: { ...current }, to: { ...to }, cells: result.cells };
+        path.push(move);
+        activeStroke.push(move);
+        current = { ...to };
+        if (isComplete()) {
+          showMessage(
+            levelIndex === 1
+              ? "Congrats! Please message me 'i am the weiner' and I will be very very pleased with you"
+              : "Garden complete. The sand is fully raked.",
+            0,
+          );
+          scheduleCompletionTransition();
+        }
+        draw();
+        return true;
+      }
+
+      function isComplete() {
+        return raked.size === level.size * level.size - obstacles.size;
+      }
+
+      function hasLegalMove() {
+        return legalMoves(current, raked).length > 0;
+      }
+
+      function isStuck() {
+        return !rakeVisible && !isComplete() && !hasLegalMove();
+      }
+
+      function progress() {
+        const total = level.size * level.size - obstacles.size;
+        return Math.round((raked.size / total) * 100);
+      }
+
+      function showMessage(text, duration = 1700) {
+        message.textContent = text;
+        message.classList.add("show");
+        window.clearTimeout(noticeTimer);
+        if (duration > 0) {
+          noticeTimer = window.setTimeout(() => message.classList.remove("show"), duration);
+        }
+      }
+
+      function hintsLeftText() {
+        if (easyMode) return "unlimited hints.";
+        if (hintsLeft === 4) return "four hints left.";
+        if (hintsLeft === 3) return "three hints left.";
+        if (hintsLeft === 2) return "two hints left.";
+        if (hintsLeft === 1) return "one hint left.";
+        return "no hints left.";
+      }
+
+      function updateHintCounter() {
+        hintButton.textContent = easyMode ? "Hint (∞)" : `Hint (${hintsLeft})`;
+      }
+
+      function inBounds(tile) {
+        return tile.x >= 0 && tile.y >= 0 && tile.x < level.size && tile.y < level.size;
+      }
+
+      function legalMoves(from, visited) {
+        return directions
+          .map((direction) => ({
+            direction,
+            tile: { x: from.x + direction.x, y: from.y + direction.y },
+          }))
+          .filter(({ tile }) => inBounds(tile) && !obstacles.has(key(tile.x, tile.y)) && !visited.has(key(tile.x, tile.y)));
+      }
+
+      function canReachUnraked(from, visited, total) {
+        const queue = [from];
+        const seen = new Set([key(from.x, from.y)]);
+        let reachableUnraked = 0;
+
+        while (queue.length > 0) {
+          const tile = queue.shift();
+          const id = key(tile.x, tile.y);
+          if (!visited.has(id)) reachableUnraked += 1;
+
+          for (const direction of directions) {
+            const next = { x: tile.x + direction.x, y: tile.y + direction.y };
+            const nextId = key(next.x, next.y);
+            if (!inBounds(next) || obstacles.has(nextId) || seen.has(nextId)) continue;
+            if (visited.has(nextId) && nextId !== key(from.x, from.y)) continue;
+            seen.add(nextId);
+            queue.push(next);
+          }
+        }
+
+        return reachableUnraked === total - visited.size;
+      }
+
+      function hasTooManyDeadEnds(from, visited) {
+        let deadEnds = 0;
+        const currentId = key(from.x, from.y);
+
+        for (let y = 0; y < level.size; y += 1) {
+          for (let x = 0; x < level.size; x += 1) {
+            const id = key(x, y);
+            if (obstacles.has(id) || visited.has(id)) continue;
+
+            let exits = 0;
+            for (const direction of directions) {
+              const next = { x: x + direction.x, y: y + direction.y };
+              const nextId = key(next.x, next.y);
+              if (!inBounds(next) || obstacles.has(nextId)) continue;
+              if (!visited.has(nextId) || nextId === currentId) exits += 1;
+            }
+            if (exits === 0) return true;
+            if (exits === 1) deadEnds += 1;
+            if (deadEnds > 1) return true;
+          }
+        }
+
+        return false;
+      }
+
+      function findHintDirection() {
+        const total = level.size * level.size - obstacles.size;
+        const firstMoves = legalMoves(current, raked);
+        if (firstMoves.length === 0) return { status: "stuck" };
+        if (raked.size === total) return { status: "complete" };
+
+        const deadline = performance.now() + 160;
+        const visited = new Set(raked);
+
+        function dfs(from, firstDirection) {
+          if (visited.size === total) return firstDirection;
+          if (performance.now() > deadline) return null;
+          if (!canReachUnraked(from, visited, total)) return null;
+          if (hasTooManyDeadEnds(from, visited)) return null;
+
+          const moves = legalMoves(from, visited).sort((a, b) => {
+            visited.add(key(a.tile.x, a.tile.y));
+            const aOptions = legalMoves(a.tile, visited).length;
+            visited.delete(key(a.tile.x, a.tile.y));
+            visited.add(key(b.tile.x, b.tile.y));
+            const bOptions = legalMoves(b.tile, visited).length;
+            visited.delete(key(b.tile.x, b.tile.y));
+            return aOptions - bOptions;
+          });
+
+          for (const move of moves) {
+            const id = key(move.tile.x, move.tile.y);
+            visited.add(id);
+            const result = dfs(move.tile, firstDirection || move.direction);
+            visited.delete(id);
+            if (result) return result;
+          }
+          return null;
+        }
+
+        const direction = dfs(current, null);
+        if (!direction) return { status: "unwinnable" };
+        return { status: "ok", direction };
+      }
+
+      function showHint() {
+        if (rakeVisible) {
+          showMessage("Tap the rake to begin.", 0);
+          return;
+        }
+        if (!easyMode && hintsLeft <= 0) {
+          showMessage("No hints left.");
+          return;
+        }
+
+        const hint = findHintDirection();
+        window.clearTimeout(hintTimer);
+
+        if (hint.status === "stuck") {
+          hintMove = null;
+          resetRecommended = true;
+          showMessage("I see no paths. Reset or Undo is recommended.");
+          draw();
+          return;
+        }
+        if (hint.status === "complete") {
+          hintMove = null;
+          showMessage("Garden complete. The sand is fully raked.");
+          draw();
+          return;
+        }
+        if (hint.status === "unwinnable") {
+          hintMove = null;
+          resetRecommended = true;
+          showMessage("No winning path from here. Reset or Undo is recommended.");
+          draw();
+          return;
+        }
+
+        hintMove = {
+          from: { ...current },
+          to: { x: current.x + hint.direction.x, y: current.y + hint.direction.y },
+        };
+        if (!easyMode) hintsLeft -= 1;
+        updateHintCounter();
+        showMessage(`Best direction: ${hint.direction.label}. ${hintsLeftText()}`);
+        draw();
+        hintTimer = window.setTimeout(() => {
+          hintMove = null;
+          draw();
+        }, 1800);
+      }
+
+      function drawBackground() {
+        const w = canvas.width;
+        const h = canvas.height;
+        if (paperTexture.complete && paperTexture.naturalWidth > 0) {
+          const sx = paperTexture.naturalWidth * 0.155;
+          const sy = paperTexture.naturalHeight * 0.01;
+          const sw = paperTexture.naturalWidth * 0.69;
+          const sh = paperTexture.naturalHeight * 0.98;
+          ctx.drawImage(paperTexture, sx, sy, sw, sh, 0, 0, w, h);
+          ctx.fillStyle = "rgba(255, 252, 242, 0.18)";
+          ctx.fillRect(0, 0, w, h);
+        } else {
+          ctx.fillStyle = "#eee9dc";
+          ctx.fillRect(0, 0, w, h);
+        }
+      }
+
+      function drawBoard() {
+        const size = cell * level.size;
+        ctx.fillStyle = "#d8cfbd";
+        ctx.fillRect(boardLeft, boardTop, size, size);
+        if (rakeVisible || positionHighlight) {
+          ctx.fillStyle = positionHighlight ? "rgba(218, 154, 45, 0.32)" : "rgba(168, 72, 52, 0.24)";
+          ctx.fillRect(boardLeft + current.x * cell, boardTop + current.y * cell, cell, cell);
+          ctx.strokeStyle = positionHighlight ? "rgba(230, 167, 45, 0.92)" : "rgba(146, 54, 38, 0.42)";
+          ctx.lineWidth = Math.max(2, cell * (positionHighlight ? 0.06 : 0.035));
+          const inset = positionHighlight ? 5 : 2;
+          ctx.strokeRect(boardLeft + current.x * cell + inset, boardTop + current.y * cell + inset, cell - inset * 2, cell - inset * 2);
+        }
+        ctx.strokeStyle = "#8e775b";
+        ctx.lineWidth = 6;
+        ctx.strokeRect(boardLeft, boardTop, size, size);
+
+        ctx.strokeStyle = "rgba(129, 114, 92, 0.18)";
+        ctx.lineWidth = 1;
+        for (let i = 1; i < level.size; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(boardLeft + i * cell, boardTop);
+          ctx.lineTo(boardLeft + i * cell, boardTop + size);
+          ctx.moveTo(boardLeft, boardTop + i * cell);
+          ctx.lineTo(boardLeft + size, boardTop + i * cell);
+          ctx.stroke();
+        }
+      }
+
+      function pathTiles() {
+        const tiles = [{ x: level.start[0], y: level.start[1] }];
+        for (const move of path) {
+          tiles.push(...move.cells);
+        }
+        return tiles;
+      }
+
+      function drawPathGrooves(tiles, color, width, alpha = 1) {
+        if (tiles.length < 2) return;
+        const points = tiles.map(tileCenter);
+        const grooveOffsets = [-0.28, -0.14, 0, 0.14, 0.28].map((offset) => offset * cell);
+        const direction = (from, to) => ({
+          x: Math.sign(to.x - from.x),
+          y: Math.sign(to.y - from.y),
+        });
+        const normal = (dir) => ({ x: -dir.y, y: dir.x });
+        const offsetPoint = (point, norm, offset) => ({
+          x: point.x + norm.x * offset,
+          y: point.y + norm.y * offset,
+        });
+        const boundaryPoint = (point, dir, norm, offset, entering) => ({
+          x: point.x + (entering ? -dir.x : dir.x) * (cell / 2) + norm.x * offset,
+          y: point.y + (entering ? -dir.y : dir.y) * (cell / 2) + norm.y * offset,
+        });
+        const cornerPoint = (point, incomingDir, outgoingDir) => ({
+          x: point.x - incomingDir.x * (cell / 2) + outgoingDir.x * (cell / 2),
+          y: point.y - incomingDir.y * (cell / 2) + outgoingDir.y * (cell / 2),
+        });
+        const shortArcAnticlockwise = (startAngle, endAngle) => {
+          const tau = Math.PI * 2;
+          const clockwiseDelta = (endAngle - startAngle + tau) % tau;
+          return clockwiseDelta > Math.PI;
+        };
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.setLineDash([]);
+
+        for (const offset of grooveOffsets) {
+          const firstDir = direction(points[0], points[1]);
+          ctx.beginPath();
+          const first = offsetPoint(points[0], normal(firstDir), offset);
+          ctx.moveTo(first.x, first.y);
+
+          for (let i = 1; i < points.length - 1; i += 1) {
+            const previousDir = direction(points[i - 1], points[i]);
+            const nextDir = direction(points[i], points[i + 1]);
+
+            if (previousDir.x === nextDir.x && previousDir.y === nextDir.y) {
+              const middle = offsetPoint(points[i], normal(previousDir), offset);
+              ctx.lineTo(middle.x, middle.y);
+            } else {
+              const incomingNormal = normal(previousDir);
+              const outgoingNormal = normal(nextDir);
+              const incoming = boundaryPoint(points[i], previousDir, incomingNormal, offset, true);
+              const outgoing = boundaryPoint(points[i], nextDir, outgoingNormal, offset, false);
+              const corner = cornerPoint(points[i], previousDir, nextDir);
+              const radius = Math.hypot(incoming.x - corner.x, incoming.y - corner.y);
+              const startAngle = Math.atan2(incoming.y - corner.y, incoming.x - corner.x);
+              const endAngle = Math.atan2(outgoing.y - corner.y, outgoing.x - corner.x);
+
+              ctx.lineTo(incoming.x, incoming.y);
+              ctx.arc(
+                corner.x,
+                corner.y,
+                radius,
+                startAngle,
+                endAngle,
+                shortArcAnticlockwise(startAngle, endAngle),
+              );
+            }
+          }
+
+          const lastDir = direction(points[points.length - 2], points[points.length - 1]);
+          const last = offsetPoint(points[points.length - 1], normal(lastDir), offset);
+          ctx.lineTo(last.x, last.y);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawRakedTileTexture() {
+        ctx.save();
+        ctx.strokeStyle = "rgba(126, 108, 84, 0.2)";
+        ctx.lineCap = "round";
+        ctx.lineWidth = Math.max(2, cell * 0.035);
+        ctx.setLineDash([]);
+
+        for (const tileId of raked) {
+          const [x, y] = tileId.split(",").map(Number);
+          const cx = boardLeft + x * cell + cell / 2;
+          const cy = boardTop + y * cell + cell / 2;
+          for (let offset = -0.25; offset <= 0.25; offset += 0.25) {
+            ctx.beginPath();
+            ctx.moveTo(cx - cell * 0.32, cy + offset * cell);
+            ctx.lineTo(cx + cell * 0.32, cy + offset * cell);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+      }
+
+      function drawRakeLines() {
+        if (path.length === 0) drawRakedTileTexture();
+        drawPathGrooves(pathTiles(), "rgba(118, 101, 78, 0.62)", Math.max(3, cell * 0.055));
+      }
+
+      function drawPreview() {
+        if (!dragStart || !dragPoint) return;
+        const hover = tileAtCanvasPoint(dragPoint.x, dragPoint.y);
+        if (!hover) return;
+        if (hover.x === current.x && hover.y === current.y) return;
+        const result = validateMove(hover);
+        const start = tileCenter(current);
+        const end = tileCenter(hover);
+        ctx.save();
+        ctx.strokeStyle = result.ok ? "rgba(53, 96, 68, 0.8)" : "rgba(166, 50, 35, 0.78)";
+        ctx.lineWidth = Math.max(8, cell * 0.14);
+        ctx.lineCap = "round";
+        ctx.setLineDash([14, 12]);
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawRock(x, y, variant) {
+        const cx = boardLeft + x * cell + cell / 2;
+        const cy = boardTop + y * cell + cell / 2;
+        const wide = variant === "flat" ? 0.38 : variant === "split" ? 0.28 : 0.32;
+        const tall = variant === "mossy" ? 0.3 : variant === "round" ? 0.23 : 0.25;
+        const lean = variant === "split" ? -0.15 : variant === "mossy" ? 0.12 : -0.05;
+
+        ctx.fillStyle = "rgba(72, 68, 58, 0.24)";
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + cell * 0.23, cell * wide, cell * 0.08, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#5f746a";
+        ctx.beginPath();
+        ctx.moveTo(cx - cell * wide, cy + cell * 0.18);
+        ctx.quadraticCurveTo(cx - cell * 0.31, cy - cell * 0.02, cx - cell * 0.12, cy - cell * tall);
+        ctx.quadraticCurveTo(cx + cell * lean, cy - cell * (tall + 0.06), cx + cell * 0.24, cy - cell * 0.06);
+        ctx.quadraticCurveTo(cx + cell * wide, cy + cell * 0.04, cx + cell * (wide * 0.75), cy + cell * 0.2);
+        ctx.lineTo(cx - cell * wide, cy + cell * 0.2);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#93a198";
+        ctx.beginPath();
+        ctx.moveTo(cx - cell * 0.21, cy + cell * 0.08);
+        ctx.lineTo(cx - cell * 0.07, cy - cell * 0.17);
+        ctx.lineTo(cx + cell * 0.08, cy - cell * 0.05);
+        ctx.lineTo(cx + cell * 0.02, cy + cell * 0.14);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#b8c0b5";
+        ctx.beginPath();
+        ctx.moveTo(cx - cell * 0.13, cy - cell * 0.13);
+        ctx.lineTo(cx - cell * 0.02, cy - cell * 0.21);
+        ctx.lineTo(cx + cell * 0.06, cy - cell * 0.11);
+        ctx.lineTo(cx - cell * 0.04, cy - cell * 0.05);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#4f675e";
+        ctx.beginPath();
+        ctx.moveTo(cx + cell * 0.08, cy + cell * 0.16);
+        ctx.lineTo(cx + cell * 0.24, cy - cell * 0.02);
+        ctx.lineTo(cx + cell * (wide * 0.75), cy + cell * 0.2);
+        ctx.closePath();
+        ctx.fill();
+
+        if (variant === "split") {
+          ctx.strokeStyle = "rgba(51, 55, 53, 0.7)";
+          ctx.lineWidth = Math.max(2, cell * 0.035);
+          ctx.beginPath();
+          ctx.moveTo(cx - cell * 0.08, cy - cell * 0.17);
+          ctx.lineTo(cx + cell * 0.02, cy + cell * 0.15);
+          ctx.stroke();
+        }
+        if (variant === "mossy" || variant === "flat") {
+          ctx.fillStyle = "#6d8b5f";
+          ctx.beginPath();
+          ctx.ellipse(cx - cell * 0.17, cy - cell * 0.02, cell * 0.09, cell * 0.035, -0.35, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#78986a";
+          ctx.beginPath();
+          ctx.ellipse(cx + cell * 0.08, cy + cell * 0.07, cell * 0.07, cell * 0.03, 0.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function drawStoneLantern(x, y, variant) {
+        const cx = boardLeft + x * cell + cell / 2;
+        const cy = boardTop + y * cell + cell / 2;
+        const w = variant === "wide" ? cell * 0.56 : variant === "gate" ? cell * 0.48 : cell * 0.5;
+        const h = variant === "tall" ? cell * 0.54 : cell * 0.48;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.fillStyle = "rgba(45, 45, 42, 0.2)";
+        ctx.beginPath();
+        ctx.ellipse(0, cell * 0.27, cell * 0.34, cell * 0.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#68756e";
+        ctx.beginPath();
+        ctx.moveTo(-w * 0.54, h * 0.42);
+        ctx.lineTo(-w * 0.4, h * 0.28);
+        ctx.lineTo(w * 0.4, h * 0.28);
+        ctx.lineTo(w * 0.54, h * 0.42);
+        ctx.lineTo(w * 0.44, h * 0.53);
+        ctx.lineTo(-w * 0.44, h * 0.53);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#4f5f59";
+        ctx.fillRect(-w * 0.36, h * 0.16, w * 0.72, h * 0.13);
+        ctx.fillStyle = "#53625d";
+        if (variant === "gate") {
+          ctx.fillRect(-w * 0.35, -h * 0.1, w * 0.18, h * 0.31);
+          ctx.fillRect(w * 0.17, -h * 0.1, w * 0.18, h * 0.31);
+        } else {
+          ctx.fillRect(-w * 0.34, -h * 0.1, w * 0.68, h * 0.31);
+        }
+
+        const seed = x * 19.31 + y * 7.17;
+        const flicker =
+          0.64 +
+          Math.sin(animationTime * 0.012 + seed) * 0.18 +
+          Math.sin(animationTime * 0.031 + seed * 1.7) * 0.1;
+        const glow = ctx.createRadialGradient(0, h * 0.03, 1, 0, h * 0.03, w * 0.36);
+        glow.addColorStop(0, "#fff5a8");
+        glow.addColorStop(0.68, `rgba(209, 182, 101, ${flicker})`);
+        glow.addColorStop(1, "rgba(209, 182, 101, 0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(-w * 0.26, -h * 0.08, w * 0.52, h * 0.22);
+        ctx.fillStyle = `rgba(255, 232, 122, ${Math.min(1, flicker + 0.22)})`;
+        ctx.fillRect(-w * 0.14, -h * 0.04, w * 0.28, h * 0.13);
+        ctx.fillStyle = `rgba(255, 252, 190, ${Math.min(1, flicker + 0.34)})`;
+        ctx.beginPath();
+        ctx.ellipse(0, h * 0.02, w * 0.08, h * 0.075, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#606b67";
+        ctx.beginPath();
+        ctx.moveTo(-w * 0.66, -h * 0.12);
+        ctx.quadraticCurveTo(-w * 0.38, -h * 0.28, 0, -h * 0.39);
+        ctx.quadraticCurveTo(w * 0.38, -h * 0.28, w * 0.66, -h * 0.12);
+        ctx.lineTo(w * 0.5, -h * 0.01);
+        ctx.lineTo(-w * 0.5, -h * 0.01);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#3f4845";
+        ctx.fillRect(-w * 0.52, -h * 0.02, w * 1.04, h * 0.08);
+        ctx.fillStyle = "#7e8a84";
+        ctx.beginPath();
+        ctx.moveTo(-w * 0.08, -h * 0.39);
+        ctx.lineTo(0, -h * 0.53);
+        ctx.lineTo(w * 0.08, -h * 0.39);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#75816f";
+        ctx.beginPath();
+        ctx.ellipse(-w * 0.26, h * 0.4, w * 0.14, h * 0.04, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#7d8a73";
+        ctx.beginPath();
+        ctx.ellipse(w * 0.26, -h * 0.03, w * 0.11, h * 0.035, 0.18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawObstacles() {
+        ctx.save();
+        ctx.globalAlpha *= itemAlpha();
+        for (const [id, type] of obstacles) {
+          const [x, y] = id.split(",").map(Number);
+          const [kind, variant = "round"] = type.split(":");
+          if (kind === "house") drawStoneLantern(x, y, variant);
+          else if (kind === "bonsai") drawBonsai(x, y, variant);
+          else if (kind === "pond" && variant === "koi") drawGardenPond(x, y);
+          else if (kind === "pond") continue;
+          else drawRock(x, y, variant);
+        }
+        ctx.restore();
+      }
+
+      function itemAlpha() {
+        if (!document.body.classList.contains("intro")) return 1;
+        const elapsed = animationTime - itemFadeStart;
+        return Math.max(0, Math.min(1, elapsed / 900));
+      }
+
+      function drawGardenPond(x, y) {
+        const w = cell * 3;
+        const h = cell * 2;
+        const cx = boardLeft + x * cell + w / 2;
+        const cy = boardTop + y * cell + h / 2;
+        const t = animationTime * 0.001;
+        const pondWLocal = w * 0.97;
+        const pondHLocal = h * 0.9;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+
+        ctx.fillStyle = "rgba(64, 75, 62, 0.18)";
+        ctx.fillRect(-pondWLocal * 0.46, pondHLocal * 0.4, pondWLocal * 0.92, h * 0.1);
+
+        ctx.fillStyle = "#5d7167";
+        ctx.fillRect(-pondWLocal / 2, -pondHLocal / 2, pondWLocal, pondHLocal);
+        ctx.strokeStyle = "rgba(59, 75, 68, 0.75)";
+        ctx.lineWidth = Math.max(2, cell * 0.035);
+        ctx.strokeRect(-pondWLocal / 2, -pondHLocal / 2, pondWLocal, pondHLocal);
+
+        ctx.fillStyle = "#247996";
+        ctx.fillRect(-pondWLocal * 0.44, -pondHLocal * 0.38, pondWLocal * 0.88, pondHLocal * 0.76);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-pondWLocal * 0.44, -pondHLocal * 0.38, pondWLocal * 0.88, pondHLocal * 0.76);
+        ctx.clip();
+        ctx.strokeStyle = "rgba(183, 224, 226, 0.42)";
+        ctx.lineWidth = Math.max(1, cell * 0.02);
+        ctx.lineCap = "round";
+        for (let i = -3; i <= 3; i += 1) {
+          ctx.beginPath();
+          for (let px = -pondWLocal * 0.41; px <= pondWLocal * 0.42; px += cell * 0.12) {
+            const py = i * pondHLocal * 0.09 + Math.sin(px * 0.045 + t * 2.2 + i) * cell * 0.035;
+            if (px === -pondWLocal * 0.41) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+        }
+
+        const tinyKoi = [
+          { phase: 0.2, speed: 0.9, color: "#f4eee4", spot: "#df5522" },
+          { phase: 2.2, speed: 1.12, color: "#edd060", spot: "#f4eee4" },
+          { phase: 4.1, speed: 0.78, color: "#f2eee8", spot: "#cc4420" },
+        ];
+
+        for (const fish of tinyKoi) {
+          const u = Math.sin(t * fish.speed + fish.phase);
+          const v = Math.sin(t * fish.speed * 0.72 + fish.phase * 1.7);
+          const du = Math.cos(t * fish.speed + fish.phase) * fish.speed;
+          const dv = Math.cos(t * fish.speed * 0.72 + fish.phase * 1.7) * fish.speed * 0.72;
+          const fx = u * pondWLocal * 0.34;
+          const fy = v * pondHLocal * 0.26;
+          const angle = Math.atan2(dv * pondHLocal, du * pondWLocal) + Math.PI / 2;
+
+          ctx.save();
+          ctx.translate(fx, fy);
+          ctx.rotate(angle);
+          ctx.globalAlpha = 0.72;
+          ctx.fillStyle = fish.color;
+          ctx.fillRect(-cell * 0.03, -cell * 0.08, cell * 0.06, cell * 0.14);
+          ctx.fillRect(-cell * 0.045, -cell * 0.045, cell * 0.09, cell * 0.08);
+          ctx.fillStyle = fish.spot;
+          ctx.fillRect(-cell * 0.018, -cell * 0.05, cell * 0.036, cell * 0.05);
+          ctx.fillStyle = "rgba(233, 229, 220, 0.9)";
+          ctx.fillRect(-cell * 0.04, cell * 0.055, cell * 0.032, cell * 0.04);
+          ctx.fillRect(cell * 0.008, cell * 0.055, cell * 0.032, cell * 0.04);
+          ctx.restore();
+        }
+        ctx.restore();
+
+        ctx.fillStyle = "#7d8a73";
+        ctx.fillRect(-pondWLocal * 0.49, -pondHLocal * 0.48, cell * 0.18, cell * 0.08);
+        ctx.fillStyle = "#95a081";
+        ctx.fillRect(pondWLocal * 0.37, pondHLocal * 0.41, cell * 0.16, cell * 0.07);
+        ctx.restore();
+      }
+
+      function drawBonsai(x, y) {
+        const cx = boardLeft + x * cell + cell / 2;
+        const cy = boardTop + y * cell + cell / 2;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.fillStyle = "rgba(72, 68, 58, 0.2)";
+        ctx.beginPath();
+        ctx.ellipse(0, cell * 0.26, cell * 0.36, cell * 0.09, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#7a5137";
+        ctx.lineWidth = Math.max(5, cell * 0.09);
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(-cell * 0.05, cell * 0.15);
+        ctx.bezierCurveTo(-cell * 0.03, cell * 0.02, cell * 0.09, -cell * 0.08, cell * 0.0, -cell * 0.2);
+        ctx.stroke();
+        ctx.lineWidth = Math.max(3, cell * 0.045);
+        ctx.beginPath();
+        ctx.moveTo(cell * 0.0, -cell * 0.06);
+        ctx.bezierCurveTo(cell * 0.15, -cell * 0.11, cell * 0.2, -cell * 0.17, cell * 0.28, -cell * 0.23);
+        ctx.moveTo(-cell * 0.02, -cell * 0.08);
+        ctx.bezierCurveTo(-cell * 0.14, -cell * 0.13, -cell * 0.2, -cell * 0.18, -cell * 0.28, -cell * 0.18);
+        ctx.stroke();
+
+        ctx.fillStyle = "#3f4650";
+        ctx.beginPath();
+        ctx.moveTo(-cell * 0.3, cell * 0.12);
+        ctx.lineTo(cell * 0.3, cell * 0.12);
+        ctx.lineTo(cell * 0.22, cell * 0.29);
+        ctx.lineTo(-cell * 0.22, cell * 0.29);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#58616d";
+        ctx.fillRect(-cell * 0.22, cell * 0.11, cell * 0.44, cell * 0.06);
+        ctx.fillStyle = "#315d42";
+        ctx.fillRect(-cell * 0.2, cell * 0.08, cell * 0.4, cell * 0.06);
+
+        const leafPad = (x, y, w, h, color) => {
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.moveTo(x - w * 0.45, y + h * 0.18);
+          ctx.quadraticCurveTo(x - w * 0.52, y - h * 0.1, x - w * 0.18, y - h * 0.35);
+          ctx.lineTo(x + w * 0.18, y - h * 0.35);
+          ctx.quadraticCurveTo(x + w * 0.52, y - h * 0.1, x + w * 0.43, y + h * 0.18);
+          ctx.lineTo(x + w * 0.24, y + h * 0.34);
+          ctx.lineTo(x - w * 0.24, y + h * 0.34);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = "rgba(45, 95, 47, 0.45)";
+          ctx.fillRect(x - w * 0.36, y + h * 0.18, w * 0.72, h * 0.14);
+        };
+
+        leafPad(-cell * 0.2, -cell * 0.16, cell * 0.42, cell * 0.27, "#4f8d45");
+        leafPad(cell * 0.06, -cell * 0.27, cell * 0.44, cell * 0.3, "#68a957");
+        leafPad(cell * 0.27, -cell * 0.2, cell * 0.34, cell * 0.23, "#4e8b45");
+        leafPad(cell * 0.02, -cell * 0.1, cell * 0.34, cell * 0.2, "#3d773c");
+
+        ctx.fillStyle = "#8fbd69";
+        ctx.fillRect(-cell * 0.02, -cell * 0.39, cell * 0.08, cell * 0.06);
+        ctx.fillRect(-cell * 0.32, -cell * 0.22, cell * 0.07, cell * 0.05);
+        ctx.fillRect(cell * 0.22, -cell * 0.28, cell * 0.06, cell * 0.05);
+        ctx.restore();
+      }
+
+      function drawZenRake() {
+        if (!rakeVisible) return;
+        const c = tileCenter(current);
+        ctx.save();
+        ctx.globalAlpha *= itemAlpha();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(-0.62);
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#b99d70";
+        ctx.lineWidth = Math.max(5, cell * 0.08);
+        ctx.beginPath();
+        ctx.moveTo(-cell * 0.46, -cell * 0.06);
+        ctx.lineTo(cell * 0.2, -cell * 0.06);
+        ctx.stroke();
+
+        ctx.fillStyle = "#d7bc8b";
+        ctx.fillRect(cell * 0.12, -cell * 0.18, cell * 0.34, cell * 0.19);
+        ctx.fillStyle = "#b99d70";
+        ctx.fillRect(cell * 0.15, -cell * 0.15, cell * 0.28, cell * 0.04);
+        ctx.strokeStyle = "#ba9863";
+        ctx.lineWidth = Math.max(3, cell * 0.045);
+        for (let i = 0; i < 4; i += 1) {
+          const x = cell * (0.17 + i * 0.08);
+          ctx.beginPath();
+          ctx.moveTo(x, -cell * 0.02);
+          ctx.lineTo(x, cell * 0.18);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawHint() {
+        if (!hintMove) return;
+
+        const from = tileCenter(hintMove.from);
+        const to = tileCenter(hintMove.to);
+        const angle = Math.atan2(to.y - from.y, to.x - from.x);
+        const startX = from.x + Math.cos(angle) * cell * 0.15;
+        const startY = from.y + Math.sin(angle) * cell * 0.15;
+        const endX = to.x - Math.cos(angle) * cell * 0.16;
+        const endY = to.y - Math.sin(angle) * cell * 0.16;
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(134, 72, 39, 0.92)";
+        ctx.fillStyle = "rgba(134, 72, 39, 0.92)";
+        ctx.lineWidth = Math.max(5, cell * 0.07);
+        ctx.lineCap = "round";
+        ctx.shadowColor = "rgba(255, 243, 188, 0.75)";
+        ctx.shadowBlur = cell * 0.16;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+
+        ctx.translate(endX, endY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(cell * 0.18, 0);
+        ctx.lineTo(-cell * 0.08, -cell * 0.13);
+        ctx.lineTo(-cell * 0.08, cell * 0.13);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function draw() {
+        boardMetrics();
+        drawBackground();
+        drawBoard();
+        drawRakeLines();
+        drawPreview();
+        drawHint();
+        drawObstacles();
+        drawZenRake();
+        progressBar.style.width = `${progress()}%`;
+        const needsRecovery = isStuck() || resetRecommended;
+        resetButton.classList.toggle("stuck", needsRecovery);
+        undoButton.classList.toggle("stuck", needsRecovery && path.length > 0);
+      }
+
+      canvas.addEventListener("pointerdown", (event) => {
+        const point = canvasPoint(event);
+        const tile = tileAtCanvasPoint(point.x, point.y);
+        if (!tile || tile.x !== current.x || tile.y !== current.y) {
+          positionHighlight = true;
+          showMessage("Start from the previously raked position.");
+          draw();
+          return;
+        }
+        canvas.setPointerCapture(event.pointerId);
+        positionHighlight = false;
+        dragStart = { ...current };
+        activeStroke = [];
+        rakeVisible = false;
+        dragPoint = point;
+        message.classList.remove("show");
+        window.clearTimeout(noticeTimer);
+        draw();
+      });
+
+      canvas.addEventListener("pointermove", (event) => {
+        if (!dragStart) return;
+        dragPoint = canvasPoint(event);
+        const tile = tileAtCanvasPoint(dragPoint.x, dragPoint.y);
+        if (tile && (tile.x !== current.x || tile.y !== current.y)) {
+          const moved = commitMove(tile);
+          dragPoint = canvasPoint(event);
+          if (!moved) draw();
+          return;
+        }
+        draw();
+      });
+
+      canvas.addEventListener("pointerup", () => {
+        if (!dragStart) return;
+        dragStart = null;
+        dragPoint = null;
+        activeStroke = [];
+        draw();
+      });
+
+      canvas.addEventListener("pointercancel", () => {
+        dragStart = null;
+        dragPoint = null;
+        activeStroke = [];
+        draw();
+      });
+
+      resetButton.addEventListener("click", () => setupLevel(levelIndex));
+      hintButton.addEventListener("click", showHint);
+      undoButton.addEventListener("click", () => {
+        const last = path.pop();
+        if (!last) {
+          showMessage("No move to undo.");
+          return;
+        }
+        hintMove = null;
+        resetRecommended = false;
+        last.cells.forEach((tile) => raked.delete(key(tile.x, tile.y)));
+        current = { ...last.from };
+        if (path.length === 0) rakeVisible = true;
+        showMessage("Last rake stroke undone.");
+        draw();
+      });
+      window.addEventListener("pointerdown", (event) => {
+        if (event.target.closest?.(".start-panel")) return;
+        if (event.target.closest?.(".stage")) return;
+        if (levelIndex === 1) return;
+        callKoiTo(event.clientX, event.clientY);
+      });
+
+      window.addEventListener("resize", () => {
+        resizePond();
+        draw();
+      });
+      window.addEventListener("popstate", () => setupLevel(levelFromLocation()));
+      window.addEventListener("hashchange", () => {
+        easyMode = isEasyMode();
+        updateHintCounter();
+      });
+      window.addEventListener("keydown", (event) => {
+        const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+        if (key === konamiCode[konamiIndex]) {
+          konamiIndex += 1;
+          if (konamiIndex === konamiCode.length) {
+            konamiIndex = 0;
+            unlockEasyMode();
+          }
+          return;
+        }
+        konamiIndex = key === konamiCode[0] ? 1 : 0;
+      });
+      paperTexture.addEventListener("load", draw);
+      const startingLevel = levelFromLocation();
+      setupLevel(startingLevel);
+      if (startingLevel > 0 || window.location.search.includes("garden=2")) {
+        replaceLevelPath(startingLevel);
+      }
+      if (startingLevel === 1) {
+        document.body.classList.remove("prestart");
+        document.body.classList.add("intro-done");
+      }
+      function finishIntro() {
+        if (!document.body.classList.contains("intro")) return;
+        document.body.classList.remove("intro");
+        document.body.classList.add("intro-done");
+        showMessage("Tap the rake to begin.", 0);
+      }
+      function startIntro() {
+        if (!document.body.classList.contains("prestart")) return;
+        document.body.classList.remove("prestart");
+        document.body.classList.add("intro");
+        itemFadeStart = (animationTime || performance.now()) + 1520;
+        window.setTimeout(finishIntro, 2460);
+      }
+      startButton.addEventListener("click", startIntro);
+      document.querySelector(".stage").addEventListener("animationend", (event) => {
+        if (event.animationName === "unfurl-paper") {
+          window.setTimeout(finishIntro, 560);
+        }
+      });
+
+      function animate(timestamp) {
+        drawPond(timestamp);
+        animationTime = timestamp;
+        draw();
+        window.requestAnimationFrame(animate);
+      }
+
+      window.requestAnimationFrame(animate);
+    </script>
+  </body>
+</html>
