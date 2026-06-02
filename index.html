@@ -503,7 +503,7 @@
       let animationTime = 0;
       let hintMove = null;
       let hintTimer = 0;
-      let hintsLeft = 3;
+      let hintsLeft = 5;
       let easyMode = false;
       let resetRecommended = false;
       let positionHighlight = false;
@@ -964,7 +964,7 @@
         activeStroke = [];
         hintMove = null;
         easyMode = isEasyMode();
-        hintsLeft = 3;
+        hintsLeft = 5;
         resetRecommended = false;
         positionHighlight = false;
         rakeVisible = true;
@@ -1137,6 +1137,8 @@
 
       function hintsLeftText() {
         if (easyMode) return "unlimited hints.";
+        if (hintsLeft === 4) return "four hints left.";
+        if (hintsLeft === 3) return "three hints left.";
         if (hintsLeft === 2) return "two hints left.";
         if (hintsLeft === 1) return "one hint left.";
         return "no hints left.";
