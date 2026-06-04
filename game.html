@@ -415,6 +415,52 @@
           0 0 0 3px rgba(190, 76, 52, 0.24),
           0 6px 16px rgba(88, 30, 20, 0.28);
       }
+
+      .challenge-modal {
+        position: fixed;
+        z-index: 5;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: rgba(7, 31, 48, 0.28);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 220ms ease;
+      }
+
+      .challenge-modal.show {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .challenge-card {
+        width: min(92vw, 390px);
+        display: grid;
+        gap: 14px;
+        padding: 20px;
+        border: 2px solid rgba(117, 82, 52, 0.45);
+        border-radius: 8px;
+        background:
+          linear-gradient(rgba(255, 252, 242, 0.56), rgba(255, 252, 242, 0.56)),
+          url("assets/zen-paper.webp") center / cover,
+          #f3eddd;
+        box-shadow: 0 18px 38px rgba(8, 29, 41, 0.34);
+        color: #3f3428;
+        text-align: center;
+      }
+
+      .challenge-card p {
+        margin: 0;
+        font-size: 1.2rem;
+        line-height: 1.24;
+        font-weight: 860;
+      }
+
+      .challenge-actions {
+        display: grid;
+        gap: 10px;
+      }
     </style>
   </head>
   <body class="prestart">
@@ -424,6 +470,15 @@
         <img class="title-image" src="assets/title-screen.png" alt="Max's Zen Garden puzzle" />
         <button class="start-button" id="startButton" type="button">Click to start</button>
         <p class="feed-note">or click on the water to feed fish</p>
+      </div>
+    </div>
+    <div class="challenge-modal" id="challengeModal" aria-hidden="true">
+      <div class="challenge-card" role="dialog" aria-modal="true" aria-labelledby="challengeTitle">
+        <p id="challengeTitle">congrats grasshopper<br />Now for a harder challenge!</p>
+        <div class="challenge-actions">
+          <button id="previousGardenButton" type="button">go back to previous garden</button>
+          <button id="readyGardenButton" type="button">I'm ready</button>
+        </div>
       </div>
     </div>
     <main class="app">
@@ -461,6 +516,9 @@
       const undoButton = document.querySelector("#undoButton");
       const hintButton = document.querySelector("#hintButton");
       const startButton = document.querySelector("#startButton");
+      const challengeModal = document.querySelector("#challengeModal");
+      const previousGardenButton = document.querySelector("#previousGardenButton");
+      const readyGardenButton = document.querySelector("#readyGardenButton");
       const paperTexture = new Image();
       paperTexture.src = "assets/zen-paper.webp";
 
@@ -536,6 +594,7 @@
       let positionHighlight = false;
       let itemFadeStart = 0;
       let completeTimer = 0;
+      let challengeTimer = 0;
       let pondW = 0;
       let pondH = 0;
       let lastLeafSpawn = 0;
@@ -545,6 +604,7 @@
       const ripples = [];
       const acerLeaves = [];
       const konamiCode = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
+      const reachedGardenTwoKey = "zenGardenReachedGarden2";
       const koi = [
         { x: 0.07, y: 0.34, angle: 0.2, targetAngle: 0.2, nextTurn: 0, speed: 18, phase: 0.2, alpha: 0.7, spot: "#ff5a1d", fin: "#c9b7af" },
         { x: 0.18, y: 0.88, angle: -0.35, targetAngle: -0.35, nextTurn: 0, speed: 15, phase: 1.9, alpha: 0.62, spot: "#e24a18", fin: "#bba8a1" },
@@ -1002,8 +1062,9 @@
         pondCtx.restore();
       }
 
-      function setupLevel(index) {
+      function setupLevel(index, options = {}) {
         window.clearTimeout(completeTimer);
+        window.clearTimeout(challengeTimer);
         levelIndex = (index + levels.length) % levels.length;
         level = levels[levelIndex];
         raked = new Set();
@@ -1020,9 +1081,26 @@
         resetRecommended = false;
         positionHighlight = false;
         rakeVisible = true;
-        if (levelIndex !== 1) {
+        challengeModal.classList.remove("show");
+        challengeModal.setAttribute("aria-hidden", "true");
+        if (levelIndex === 1) {
+          rememberGardenTwo();
+          document.body.classList.add("garden-two-intro");
+          document.body.classList.remove("garden-two-ready");
+          gardenTwoIntroStart = 0;
+          gardenTwoIntroDone = false;
+          challengeTimer = window.setTimeout(() => {
+            gardenTwoIntroDone = true;
+            document.body.classList.remove("garden-two-intro");
+            document.body.classList.add("garden-two-ready");
+            if (options.showChallenge !== false) showChallengeModal();
+          }, 2300);
+        } else {
           acerLeaves.length = 0;
           lastLeafSpawn = 0;
+          gardenTwoIntroStart = 0;
+          gardenTwoIntroDone = false;
+          document.body.classList.remove("garden-two-intro", "garden-two-ready");
         }
         levelLabel.textContent = level.name;
         updateHintCounter();
@@ -1030,9 +1108,37 @@
         draw();
       }
 
+      function hasReachedGardenTwo() {
+        try {
+          return window.localStorage?.getItem(reachedGardenTwoKey) === "true";
+        } catch {
+          return false;
+        }
+      }
+
+      function rememberGardenTwo() {
+        try {
+          window.localStorage?.setItem(reachedGardenTwoKey, "true");
+        } catch {
+          return;
+        }
+      }
+
+      function showChallengeModal() {
+        if (levelIndex !== 1) return;
+        challengeModal.classList.add("show");
+        challengeModal.setAttribute("aria-hidden", "false");
+      }
+
+      function hideChallengeModal() {
+        challengeModal.classList.remove("show");
+        challengeModal.setAttribute("aria-hidden", "true");
+      }
+
       function levelFromLocation() {
         if (window.location.pathname.includes("garden-2")) return 1;
         if (new URLSearchParams(window.location.search).get("garden") === "2") return 1;
+        if (hasReachedGardenTwo()) return 1;
         return 0;
       }
 
@@ -1060,11 +1166,11 @@
         }
       }
 
-      function goToLevel(index) {
+      function goToLevel(index, options = {}) {
         if (window.history?.pushState) {
           window.history.pushState({}, "", levelPath(index));
         }
-        setupLevel(index);
+        setupLevel(index, options);
       }
 
       function scheduleCompletionTransition() {
@@ -1149,13 +1255,12 @@
         activeStroke.push(move);
         current = { ...to };
         if (isComplete()) {
-          showMessage(
-            levelIndex === 1
-              ? "Congrats! Please message me 'i am the weiner' and I will be very very pleased with you"
-              : "Garden complete. The sand is fully raked.",
-            0,
-          );
-          scheduleCompletionTransition();
+          if (levelIndex === 0) {
+            rememberGardenTwo();
+            goToLevel(1, { showChallenge: true });
+          } else {
+            showMessage("Congrats! Please message me 'i am the weiner' and I will be very very pleased with you", 0);
+          }
         }
         draw();
         return true;
@@ -1969,8 +2074,16 @@
         draw();
       });
 
-      resetButton.addEventListener("click", () => setupLevel(levelIndex));
+      resetButton.addEventListener("click", () => setupLevel(levelIndex, { showChallenge: false }));
       hintButton.addEventListener("click", showHint);
+      previousGardenButton.addEventListener("click", () => {
+        hideChallengeModal();
+        goToLevel(0);
+      });
+      readyGardenButton.addEventListener("click", () => {
+        hideChallengeModal();
+        showMessage("Tap the rake to begin.", 0);
+      });
       undoButton.addEventListener("click", () => {
         const last = path.pop();
         if (!last) {
