@@ -68,6 +68,17 @@
         transform: translateY(0);
       }
 
+      .garden-two-intro .topbar {
+        opacity: 0;
+        transform: translateY(-8px);
+        pointer-events: none;
+      }
+
+      .garden-two-ready .topbar {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
       .title-row {
         display: flex;
         align-items: end;
@@ -125,6 +136,9 @@
           url("assets/zen-paper.webp") center / cover,
           #d8cfbd;
         transform-origin: top center;
+        transition:
+          opacity 520ms ease,
+          transform 520ms ease;
       }
 
       .prestart .stage {
@@ -136,8 +150,19 @@
       .intro .stage {
         opacity: 1;
         animation:
-          paper-fade-in 360ms ease both,
-          unfurl-paper 1250ms cubic-bezier(0.2, 0.86, 0.2, 1) 240ms both;
+          paper-fade-in 420ms ease both,
+          unfurl-paper 1480ms cubic-bezier(0.16, 0.82, 0.22, 1) 160ms both;
+      }
+
+      .garden-two-intro .stage {
+        opacity: 0;
+        transform: translateY(12px) scale(0.985);
+        pointer-events: none;
+      }
+
+      .garden-two-ready .stage {
+        opacity: 1;
+        transform: translateY(0) scale(1);
       }
 
       .start-panel {
@@ -221,14 +246,14 @@
       }
 
       .intro .stage::after {
-        animation: paper-roll 1250ms cubic-bezier(0.2, 0.86, 0.2, 1) 240ms both;
+        animation: paper-roll 1480ms cubic-bezier(0.16, 0.82, 0.22, 1) 160ms both;
       }
 
       .intro #garden,
       .intro .controls,
       .intro .aim {
         opacity: 0;
-        animation: fade-on-paper 520ms ease 1520ms both;
+        animation: fade-on-paper 760ms cubic-bezier(0.2, 0.72, 0.24, 1) 1120ms both;
       }
 
       .intro-done #garden,
@@ -514,6 +539,8 @@
       let pondW = 0;
       let pondH = 0;
       let lastLeafSpawn = 0;
+      let gardenTwoIntroStart = 0;
+      let gardenTwoIntroDone = false;
       let konamiIndex = 0;
       const ripples = [];
       const acerLeaves = [];
@@ -673,6 +700,10 @@
           return;
         }
 
+        drawWaterGardenBackground(time, dt);
+      }
+
+      function drawWaterGardenBackground(time, dt) {
         pondCtx.clearRect(0, 0, pondW, pondH);
         const gradient = pondCtx.createLinearGradient(0, 0, pondW, pondH);
         gradient.addColorStop(0, "#287fa8");
@@ -730,31 +761,46 @@
         }
       }
 
+      function easeOutCubic(value) {
+        return 1 - Math.pow(1 - Math.max(0, Math.min(1, value)), 3);
+      }
+
       function drawShojiGardenBackground(time, dt) {
-        pondCtx.clearRect(0, 0, pondW, pondH);
-
-        const base = pondCtx.createLinearGradient(0, 0, pondW, pondH);
-        base.addColorStop(0, "#d7d29a");
-        base.addColorStop(0.5, "#c8c284");
-        base.addColorStop(1, "#aaa06e");
-        pondCtx.fillStyle = base;
-        pondCtx.fillRect(0, 0, pondW, pondH);
-
         const rail = Math.max(8, pondW * 0.014);
         const panels = [
-          [0, 0, pondW * 0.5, pondH * 0.3, "h"],
-          [0, pondH * 0.3, pondW * 0.25, pondH * 0.58, "v"],
-          [pondW * 0.25, pondH * 0.3, pondW * 0.25, pondH * 0.58, "v"],
-          [pondW * 0.5, 0, pondW * 0.26, pondH * 0.66, "v"],
-          [pondW * 0.76, 0, pondW * 0.24, pondH * 0.66, "v"],
-          [pondW * 0.5, pondH * 0.66, pondW * 0.5, pondH * 0.22, "h"],
-          [0, pondH * 0.88, pondW, pondH * 0.12, "h"],
+          [0, 0, pondW * 0.5, pondH * 0.3, "h", -1, 0, 0],
+          [0, pondH * 0.3, pondW * 0.25, pondH * 0.58, "v", 0, 1, 110],
+          [pondW * 0.25, pondH * 0.3, pondW * 0.25, pondH * 0.58, "v", 0, -1, 220],
+          [pondW * 0.5, 0, pondW * 0.26, pondH * 0.66, "v", 1, 0, 330],
+          [pondW * 0.76, 0, pondW * 0.24, pondH * 0.66, "v", 0, -1, 440],
+          [pondW * 0.5, pondH * 0.66, pondW * 0.5, pondH * 0.22, "h", 1, 0, 550],
+          [0, pondH * 0.88, pondW, pondH * 0.12, "h", 0, 1, 660],
         ];
 
-        for (const [x, y, w, h, direction] of panels) {
-          drawTatamiPanel(x + rail * 0.35, y + rail * 0.35, w - rail * 0.7, h - rail * 0.7, direction, time);
+        if (!gardenTwoIntroStart) gardenTwoIntroStart = time;
+        const introAge = gardenTwoIntroDone ? 1600 : time - gardenTwoIntroStart;
+        const fullProgress = Math.max(0, Math.min(1, introAge / 1520));
+
+        drawWaterGardenBackground(time, dt);
+
+        pondCtx.save();
+        pondCtx.globalAlpha = 0.16 + fullProgress * 0.14;
+        pondCtx.fillStyle = "#d7d29a";
+        pondCtx.fillRect(0, 0, pondW, pondH);
+        pondCtx.restore();
+
+        for (const [x, y, w, h, direction, fromX, fromY, delay] of panels) {
+          const progress = easeOutCubic((introAge - delay) / 900);
+          const offsetX = fromX * (1 - progress) * (pondW * 0.78 + w);
+          const offsetY = fromY * (1 - progress) * (pondH * 0.72 + h);
+          pondCtx.save();
+          pondCtx.globalAlpha = Math.max(0, Math.min(1, (introAge - delay) / 260));
+          drawTatamiPanel(x + rail * 0.35 + offsetX, y + rail * 0.35 + offsetY, w - rail * 0.7, h - rail * 0.7, direction, time);
+          pondCtx.restore();
         }
 
+        pondCtx.save();
+        pondCtx.globalAlpha = fullProgress;
         pondCtx.fillStyle = "rgba(82, 70, 43, 0.68)";
         pondCtx.fillRect(0, pondH * 0.3 - rail / 2, pondW * 0.5, rail);
         pondCtx.fillRect(pondW * 0.5 - rail / 2, 0, rail, pondH);
@@ -762,17 +808,21 @@
         pondCtx.fillRect(pondW * 0.5, pondH * 0.66 - rail / 2, pondW * 0.5, rail);
         pondCtx.fillRect(pondW * 0.25 - rail / 2, pondH * 0.3, rail, pondH * 0.58);
         pondCtx.fillRect(0, pondH * 0.88 - rail / 2, pondW, rail);
+        pondCtx.restore();
 
         pondCtx.save();
-        pondCtx.globalAlpha = 0.16;
+        pondCtx.globalAlpha = fullProgress * 0.16;
         pondCtx.fillStyle = "#fff5bf";
         pondCtx.fillRect(0, 0, pondW, pondH);
         pondCtx.restore();
 
+        pondCtx.save();
+        pondCtx.globalAlpha = fullProgress;
         pondCtx.fillStyle = "rgba(84, 74, 48, 0.1)";
         pondCtx.fillRect(0, 0, pondW, pondH);
+        pondCtx.restore();
 
-        if (time - lastLeafSpawn > 1500) {
+        if (fullProgress >= 1 && time - lastLeafSpawn > 1500) {
           lastLeafSpawn = time;
           const palette = ["#a82022", "#c73324", "#df4b24", "#ec7a22", "#d99d28", "#7b983c", "#438142"];
           acerLeaves.push({
@@ -1983,13 +2033,13 @@
         if (!document.body.classList.contains("prestart")) return;
         document.body.classList.remove("prestart");
         document.body.classList.add("intro");
-        itemFadeStart = (animationTime || performance.now()) + 1520;
-        window.setTimeout(finishIntro, 2460);
+        itemFadeStart = (animationTime || performance.now()) + 1120;
+        window.setTimeout(finishIntro, 2220);
       }
       startButton.addEventListener("click", startIntro);
       document.querySelector(".stage").addEventListener("animationend", (event) => {
         if (event.animationName === "unfurl-paper") {
-          window.setTimeout(finishIntro, 560);
+          window.setTimeout(finishIntro, 380);
         }
       });
 
