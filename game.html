@@ -2059,8 +2059,13 @@
         draw();
       });
 
-      canvas.addEventListener("pointerup", () => {
+      canvas.addEventListener("pointerup", (event) => {
         if (!dragStart) return;
+        const point = canvasPoint(event);
+        const tile = tileAtCanvasPoint(point.x, point.y);
+        if (tile && (tile.x !== current.x || tile.y !== current.y)) {
+          commitMove(tile);
+        }
         dragStart = null;
         dragPoint = null;
         activeStroke = [];
