@@ -461,6 +461,53 @@
         display: grid;
         gap: 10px;
       }
+
+      .complete-modal {
+        position: fixed;
+        z-index: 6;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: rgba(7, 31, 48, 0.36);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 220ms ease;
+      }
+
+      .complete-modal.show {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .complete-card {
+        width: min(92vw, 390px);
+        display: grid;
+        gap: 14px;
+        padding: 22px;
+        border: 2px solid rgba(117, 82, 52, 0.5);
+        border-radius: 8px;
+        background:
+          linear-gradient(rgba(255, 252, 242, 0.62), rgba(255, 252, 242, 0.62)),
+          url("assets/zen-paper.webp") center / cover,
+          #f3eddd;
+        box-shadow: 0 20px 42px rgba(8, 29, 41, 0.38);
+        color: #3f3428;
+        text-align: center;
+      }
+
+      .complete-card h2 {
+        margin: 0;
+        font-size: 1.65rem;
+        line-height: 1.05;
+      }
+
+      .complete-card p {
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.35;
+        font-weight: 760;
+      }
     </style>
   </head>
   <body class="prestart">
@@ -479,6 +526,12 @@
           <button id="previousGardenButton" type="button">go back to previous garden</button>
           <button id="readyGardenButton" type="button">I'm ready</button>
         </div>
+      </div>
+    </div>
+    <div class="complete-modal" id="completeModal" aria-hidden="true">
+      <div class="complete-card" role="dialog" aria-modal="true" aria-labelledby="completeTitle">
+        <h2 id="completeTitle">Well done!</h2>
+        <p>Congrats! Please message me 'i am the weiner' and I will be very very pleased with you</p>
       </div>
     </div>
     <main class="app">
@@ -519,6 +572,7 @@
       const challengeModal = document.querySelector("#challengeModal");
       const previousGardenButton = document.querySelector("#previousGardenButton");
       const readyGardenButton = document.querySelector("#readyGardenButton");
+      const completeModal = document.querySelector("#completeModal");
       const paperTexture = new Image();
       paperTexture.src = "assets/zen-paper.webp";
 
@@ -591,6 +645,7 @@
       let hintsLeft = 5;
       let easyMode = false;
       let resetRecommended = false;
+      let completionHandled = false;
       let positionHighlight = false;
       let itemFadeStart = 0;
       let completeTimer = 0;
@@ -1079,10 +1134,13 @@
         easyMode = isEasyMode();
         hintsLeft = 5;
         resetRecommended = false;
+        completionHandled = false;
         positionHighlight = false;
         rakeVisible = true;
         challengeModal.classList.remove("show");
         challengeModal.setAttribute("aria-hidden", "true");
+        completeModal.classList.remove("show");
+        completeModal.setAttribute("aria-hidden", "true");
         if (levelIndex === 1) {
           rememberGardenTwo();
           document.body.classList.add("garden-two-intro");
@@ -1133,6 +1191,27 @@
       function hideChallengeModal() {
         challengeModal.classList.remove("show");
         challengeModal.setAttribute("aria-hidden", "true");
+      }
+
+      function showCompleteModal() {
+        completeModal.classList.add("show");
+        completeModal.setAttribute("aria-hidden", "false");
+      }
+
+      function handleCompletion() {
+        if (completionHandled || !isComplete()) return false;
+        completionHandled = true;
+        resetRecommended = false;
+        hintMove = null;
+        window.clearTimeout(hintTimer);
+        if (levelIndex === 0) {
+          rememberGardenTwo();
+          goToLevel(1, { showChallenge: true });
+        } else {
+          showMessage("Well done!", 0);
+          showCompleteModal();
+        }
+        return true;
       }
 
       function levelFromLocation() {
@@ -1254,14 +1333,7 @@
         path.push(move);
         activeStroke.push(move);
         current = { ...to };
-        if (isComplete()) {
-          if (levelIndex === 0) {
-            rememberGardenTwo();
-            goToLevel(1, { showChallenge: true });
-          } else {
-            showMessage("Congrats! Please message me 'i am the weiner' and I will be very very pleased with you", 0);
-          }
-        }
+        handleCompletion();
         draw();
         return true;
       }
@@ -2021,7 +2093,8 @@
         drawObstacles();
         drawZenRake();
         progressBar.style.width = `${progress()}%`;
-        const needsRecovery = isStuck() || resetRecommended;
+        handleCompletion();
+        const needsRecovery = !completionHandled && (isStuck() || resetRecommended);
         resetButton.classList.toggle("stuck", needsRecovery);
         undoButton.classList.toggle("stuck", needsRecovery && path.length > 0);
       }
