@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Seigaiha Waves</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #56a3dc;
+    }
+    #stage {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      touch-action: none;          /* let us own the drag gesture */
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      z-index: 0;
+    }
+    #white-fade {
+      position: fixed;
+      inset: 0;
+      background: #ffffff;
+      pointer-events: none;
+      z-index: 1;
+      animation: reveal-waves 0.48s ease-in-out 1.85s forwards;
+    }
+    #torii-tunnel {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 2;
+    }
+    #torii-run use {
+      will-change: transform, opacity;
+    }
+    #game-portal {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      width: min(430px, 92vw);
+      height: min(92vh, 760px);
+      border: 0;
+      background: transparent;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(0.04);
+      transform-origin: center;
+      z-index: 5;
+      will-change: transform, opacity;
+    }
+    #game-portal.is-active {
+      animation: portal-approach 0.38s cubic-bezier(0.14, 0.8, 0.2, 1) forwards;
+    }
+    #game-portal.is-playable {
+      pointer-events: auto;
+    }
+    body.arrived #torii-tunnel {
+      animation: tunnel-fade 0.28s ease-out forwards;
+    }
+    /* The red overlay that flashes when a wave is touched.
+       Default (resting) state fades back over 1.5s; hit state fades in over .2s. */
+    .wave .ov {
+      opacity: 0;
+      transition: opacity 1.5s ease;
+      pointer-events: none;
+    }
+    .wave.is-hit .ov {
+      opacity: 1;
+      transition: opacity 0.2s ease;
+    }
+    #sheet {
+      animation: pattern-scroll var(--scroll-duration, 42s) linear infinite;
+    }
+    .wave {
+      animation: wave-bob var(--bob-duration, 3.8s) ease-in-out infinite;
+      animation-delay: var(--bob-delay, 0s);
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    @keyframes pattern-scroll {
+      from {
+        transform: translate(0, 0);
+      }
+      to {
+        transform: translate(var(--scroll-x), var(--scroll-y));
+      }
+    }
+    @keyframes wave-bob {
+      0%, 100% {
+        transform: translateY(-3px);
+      }
+      50% {
+        transform: translateY(3px);
+      }
+    }
+    @keyframes reveal-waves {
+      0%, 12% {
+        opacity: 1;
+      }
+      68%, 100% {
+        opacity: 0;
+      }
+    }
+    @keyframes tunnel-fade {
+      to {
+        opacity: 0;
+      }
+    }
+    @keyframes portal-approach {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.04);
+        filter: brightness(1.25) blur(3px);
+      }
+      22% {
+        opacity: 1;
+      }
+      72% {
+        filter: brightness(1.06) blur(0.4px);
+      }
+      100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+        filter: brightness(1) blur(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <svg id="stage" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div id="white-fade"></div>
+  <svg id="torii-tunnel" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <g id="torii-gate" shape-rendering="crispEdges">
+        <path d="M72 166 C160 190 480 190 568 166 L555 205 C430 229 210 229 85 205 Z" fill="#171919" />
+        <path d="M82 175 C180 198 460 198 558 175 L551 190 C434 214 206 214 89 190 Z" fill="#242526" />
+        <path d="M70 164 C178 184 462 184 570 164 L574 176 C440 200 200 200 66 176 Z" fill="#111313" />
+        <path d="M95 194 C214 215 426 215 545 194 L536 222 C422 238 218 238 104 222 Z" fill="#e32917" />
+        <path d="M105 222 H535 L528 246 H112 Z" fill="#c91513" />
+        <path d="M180 176 C245 189 395 189 460 176 V204 C382 217 258 217 180 204 Z" fill="#ef3218" />
+
+        <rect x="274" y="214" width="92" height="72" fill="#151617" />
+        <rect x="274" y="286" width="92" height="43" fill="#d51c15" />
+
+        <rect x="116" y="281" width="408" height="30" fill="#c72a1e" />
+        <rect x="126" y="246" width="40" height="36" fill="#e12d1b" />
+        <rect x="213" y="244" width="32" height="39" fill="#e12d1b" />
+        <rect x="395" y="244" width="32" height="39" fill="#e12d1b" />
+        <rect x="474" y="246" width="40" height="36" fill="#e12d1b" />
+
+        <rect x="182" y="311" width="32" height="237" fill="#d93823" />
+        <rect x="426" y="311" width="32" height="237" fill="#d93823" />
+        <rect x="214" y="311" width="10" height="237" fill="#a92720" opacity=".45" />
+        <rect x="416" y="311" width="10" height="237" fill="#a92720" opacity=".45" />
+        <rect x="176" y="548" width="48" height="18" fill="#111313" />
+        <rect x="416" y="548" width="48" height="18" fill="#111313" />
+      </g>
+    </defs>
+    <g id="torii-run"></g>
+  </svg>
+  <iframe id="game-portal" src="game.html?embed=1" title="Zen Puzzle Garden" allow="fullscreen"></iframe>
+
+  <script>
+    (function () {
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const stage = document.getElementById("stage");
+      const toriiRun = document.getElementById("torii-run");
+
+      // --- palette (sampled from the reference image) ---
+      const BLUE  = "#56a3dc";
+      const WHITE = "#ffffff";
+      const TAN   = "#efce9f";
+      const RED   = "#e8322f";
+
+      // Concentric-ring recipe for a single fan, as [radiusFraction, color].
+      // Thin white lines over wider blue bands, 5 nested arcs down to a small
+      // blue center → matches the seigaiha look.
+      const RINGED_BLUE = [
+        [1.00, WHITE], [0.92, BLUE],
+        [0.79, WHITE], [0.71, BLUE],
+        [0.58, WHITE], [0.50, BLUE],
+        [0.37, WHITE], [0.29, BLUE],
+        [0.16, WHITE], [0.08, BLUE],
+      ];
+      const SOLID_BLUE = [[1.00, WHITE], [0.92, BLUE]];
+      const SOLID_TAN  = [[1.00, WHITE], [0.92, TAN]];
+
+      // Geometry of the tiling.
+      const R = 95;                 // circle radius
+      const COL = R;                // horizontal spacing between centers in a row
+      const ROW = R * 0.9;          // vertical spacing just under R so each fan
+                                    // shows its full nested arcs (classic seigaiha
+                                    // scale) while staying nicely rounded
+      const PATTERN_COLS = 12;
+      const PATTERN_ROWS = 8;       // even row count keeps the stagger aligned
+      const SCROLL_X = COL * PATTERN_COLS;
+      const SCROLL_Y = ROW * PATTERN_ROWS;
+      const GATE_COUNT = 100;
+      const GATE_HOLD_MS = 500;
+      const FIRST_GATE_MS = 1100;
+      const GATE_TRAVEL_MS = 1100;
+      const GATE_SPAWN_MS = 28;
+      const GATE_CENTER_X = 500;
+      const GATE_VANISH_START_Y = 760;
+      const GATE_VANISH_END_Y = 520;
+      const TUNNEL_RELEASE_AT = 0;
+      const PORTAL_ARRIVAL_MS = 1900;
+      const PORTAL_PLAYABLE_MS = 2300;
+      const TUNNEL_REMOVE_MS = 1850;
+
+      function el(name, attrs) {
+        const node = document.createElementNS(SVG_NS, name);
+        for (const k in attrs) node.setAttribute(k, attrs[k]);
+        return node;
+      }
+
+      function mod(n, m) {
+        return ((n % m) + m) % m;
+      }
+
+      function pickRecipe(rowIndex, colIndex) {
+        const r = mod(rowIndex, PATTERN_ROWS);
+        const c = mod(colIndex, PATTERN_COLS);
+        const roll = (r * 17 + c * 31 + r * c * 7) % 100;
+
+        if (roll < 10) return SOLID_TAN;
+        if (roll < 21) return SOLID_BLUE;
+        return RINGED_BLUE;
+      }
+
+      function easeInExpoish(t) {
+        return t * t * (2.45 - 1.45 * t);
+      }
+
+      const gates = [];
+      function buildGateRun() {
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < GATE_COUNT; i++) {
+          const gate = el("use", { href: "#torii-gate" });
+          gates.push(gate);
+          frag.appendChild(gate);
+        }
+        toriiRun.appendChild(frag);
+      }
+
+      let gateStart = 0;
+      function animateGateRun(now) {
+        const ordered = [];
+        if (!gateStart) gateStart = now;
+        const elapsed = now - gateStart;
+        const activeElapsed = Math.max(0, elapsed - GATE_HOLD_MS);
+        const tunnelElapsed = activeElapsed - FIRST_GATE_MS * TUNNEL_RELEASE_AT;
+
+        for (let i = 0; i < gates.length; i++) {
+          const gate = gates[i];
+          const startAt = i === 0
+            ? 0
+            : FIRST_GATE_MS * TUNNEL_RELEASE_AT + (i - 1) * GATE_SPAWN_MS;
+          const travelMs = i === 0 ? FIRST_GATE_MS : GATE_TRAVEL_MS;
+          const runAge = activeElapsed - startAt;
+
+          if (runAge < 0) {
+            gate.setAttribute("opacity", "0");
+            continue;
+          }
+
+          const phase = mod(runAge / travelMs, 1);
+          const cycleStartedAt = startAt + Math.floor(runAge / travelMs) * travelMs;
+          const spawnProgress = Math.min(1, Math.max(0, cycleStartedAt / PORTAL_ARRIVAL_MS));
+          const spawnY = GATE_VANISH_START_Y + spawnProgress * (GATE_VANISH_END_Y - GATE_VANISH_START_Y);
+          const zoom = easeInExpoish(phase);
+          // One-way pass-through: each torii rushes toward the camera, blows
+          // up past the screen, then disappears while the next gates continue.
+          const scale = 0.55 + zoom * 7.9;
+          const y = spawnY - zoom * 170;
+          const x = GATE_CENTER_X + Math.sin((phase + i * 0.13) * Math.PI * 2) * 4 * zoom;
+          const farFade = i === 0 && activeElapsed === 0 ? 1 : Math.min(1, phase / 0.1);
+          const nearFade = phase > 0.95 ? Math.max(0, (1 - phase) / 0.05) : 1;
+          const tunnelFade = i === 0 ? 1 : Math.min(1, Math.max(0, tunnelElapsed / 600));
+          const opacity = Math.min(farFade, nearFade) * tunnelFade;
+
+          gate.setAttribute("opacity", opacity.toFixed(3));
+          gate.setAttribute("transform", `translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${scale.toFixed(4)}) translate(-320 -565)`);
+          ordered.push({ gate, phase });
+        }
+
+        // Nearer gates need to draw last so they flash past in front.
+        ordered.sort((a, b) => a.phase - b.phase);
+        for (const item of ordered) toriiRun.appendChild(item.gate);
+
+        requestAnimationFrame(animateGateRun);
+      }
+
+      function build() {
+        // clear
+        while (stage.firstChild) stage.removeChild(stage.firstChild);
+
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        stage.setAttribute("width", w);
+        stage.setAttribute("height", h);
+        stage.setAttribute("viewBox", `0 0 ${w} ${h}`);
+
+        const frag = document.createDocumentFragment();
+        const sheet = el("g", {
+          id: "sheet",
+          style: `--scroll-x: ${SCROLL_X}px; --scroll-y: ${SCROLL_Y}px;`,
+        });
+
+        // Draw top-to-bottom so lower rows overlap the bottoms of upper rows,
+        // which is what carves the full circles into overlapping fans.
+        const startRow = -PATTERN_ROWS - 3;
+        const endRow = Math.ceil(h / ROW) + 3;
+        const startCol = -PATTERN_COLS - 3;
+        const endCol = Math.ceil(w / COL) + 3;
+
+        for (let rowIndex = startRow; rowIndex <= endRow; rowIndex++) {
+          const cy = rowIndex * ROW;
+          const offset = mod(rowIndex, 2) * (COL / 2);
+          for (let colIndex = startCol; colIndex <= endCol; colIndex++) {
+            const x = colIndex * COL + offset;
+
+            // Pick a fan style: mostly ringed blue, some solid blue, some tan.
+            const recipe = pickRecipe(rowIndex, colIndex);
+            const bobDelay = -((rowIndex * 0.22 + colIndex * 0.09) % 3.8).toFixed(2);
+            const bobDuration = (3.4 + mod(rowIndex + colIndex, 5) * 0.18).toFixed(2);
+            const g = el("g", {
+              class: "wave",
+              style: `--bob-delay: ${bobDelay}s; --bob-duration: ${bobDuration}s;`,
+            });
+            for (const [frac, color] of recipe) {
+              g.appendChild(el("circle", { cx: x, cy: cy, r: (R * frac).toFixed(2), fill: color }));
+            }
+            // Red flash overlay: mirror the fan's layers so white rings stay white.
+            const overlay = el("g", { class: "ov" });
+            for (const [frac, color] of recipe) {
+              overlay.appendChild(el("circle", {
+                cx: x,
+                cy: cy,
+                r: (R * frac).toFixed(2),
+                fill: color === WHITE ? WHITE : RED,
+              }));
+            }
+            g.appendChild(overlay);
+            sheet.appendChild(g);
+          }
+        }
+        frag.appendChild(sheet);
+        stage.appendChild(frag);
+      }
+
+      // --- interaction: tap or drag to flash waves red ---
+      function trigger(g) {
+        if (!g) return;
+        if (g._t) clearTimeout(g._t);
+        g.classList.add("is-hit");
+        // keep red ~1.5s, then let CSS fade it back to the original color
+        g._t = setTimeout(() => {
+          g.classList.remove("is-hit");
+          g._t = null;
+        }, 1500);
+      }
+
+      let isDown = false;
+      let lastG = null;
+
+      stage.addEventListener("pointerdown", (e) => {
+        isDown = true;
+        lastG = e.target.closest(".wave");
+        trigger(lastG);
+      });
+
+      stage.addEventListener("pointermove", (e) => {
+        if (!isDown) return;
+        const el2 = document.elementFromPoint(e.clientX, e.clientY);
+        const g = el2 && el2.closest(".wave");
+        if (g && g !== lastG) {
+          lastG = g;
+          trigger(g);
+        }
+      });
+
+      const endDrag = () => { isDown = false; lastG = null; };
+      window.addEventListener("pointerup", endDrag);
+      window.addEventListener("pointercancel", endDrag);
+
+      // build now + rebuild on resize (debounced)
+      buildGateRun();
+      build();
+      requestAnimationFrame(animateGateRun);
+      setTimeout(() => {
+        document.getElementById("white-fade")?.remove();
+      }, 2350);
+
+      // After walking through the gates, the puzzle arrives in the centre.
+      const gamePortal = document.getElementById("game-portal");
+      setTimeout(() => {
+        document.body.classList.add("arrived");
+        gamePortal.classList.add("is-active");
+      }, PORTAL_ARRIVAL_MS);
+      setTimeout(() => {
+        gamePortal.classList.add("is-playable");
+      }, PORTAL_PLAYABLE_MS);
+      setTimeout(() => {
+        document.getElementById("torii-tunnel")?.remove();
+      }, TUNNEL_REMOVE_MS);
+      let rt;
+      window.addEventListener("resize", () => {
+        clearTimeout(rt);
+        rt = setTimeout(build, 150);
+      });
+    })();
+  </script>
+</body>
+</html>
