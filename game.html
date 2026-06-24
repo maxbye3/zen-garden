@@ -201,6 +201,18 @@
         pointer-events: auto;
       }
 
+      .start-button--back {
+        display: none;
+        min-height: 42px;
+        font-size: 0.88rem;
+        background: rgba(255, 251, 238, 0.55);
+        box-shadow: 0 6px 18px rgba(10, 38, 56, 0.18);
+      }
+
+      body.has-garden-two .start-button--back {
+        display: block;
+      }
+
       .feed-note {
         margin: 0;
         padding: 7px 12px;
@@ -569,6 +581,7 @@
       <div class="start-card">
         <img class="title-image" src="assets/title-screen.png" alt="Max's Zen Garden puzzle" />
         <button class="start-button" id="startButton" type="button">Click to start</button>
+        <button class="start-button start-button--back" id="gardenTwoButton" type="button">go back to garden 2</button>
         <p class="feed-note">or click on the water to feed fish</p>
       </div>
     </div>
@@ -584,7 +597,7 @@
     <div class="complete-modal" id="completeModal" aria-hidden="true">
       <div class="complete-card" role="dialog" aria-modal="true" aria-labelledby="completeTitle">
         <h2 id="completeTitle">Well done!</h2>
-        <p>Congrats! Please message me 'i am the weiner' and I will be very very pleased with you</p>
+        <p>Congrats on beating the hardest garden. Please tell me the code 'put me in your game'</p>
       </div>
     </div>
     <main class="app">
@@ -604,7 +617,7 @@
             <button id="resetButton" type="button">Reset</button>
             <button id="hintButton" type="button">Hint</button>
           </div>
-          <div class="aim">Aim of the game is: drag your finger in the sand.<br />Fill up all the available spaces to win.</div>
+          <div class="aim">Drag your finger on the waves to turn them red</div>
           <div class="message" id="message">Rake every open tile.</div>
         </div>
       </section>
@@ -679,6 +692,35 @@
             [4, 4, "pond:block"],
           ],
         },
+        {
+          name: "Garden 3",
+          size: 9,
+          start: [8, 8],
+          stones: [
+            [0, 0, "house:wide"],
+            [5, 0, "rock:flat"],
+            [0, 1, "rock:split"],
+            [2, 1, "house:tall"],
+            [7, 1, "house:gate"],
+            [1, 3, "house:tall"],
+            [3, 3, "rock:split"],
+            [5, 3, "rock:round"],
+            [1, 4, "rock:flat"],
+            [3, 4, "bonsai:pine"],
+            [5, 4, "house:tall"],
+            [1, 5, "rock:mossy"],
+            [3, 5, "bonsai:pine"],
+            [8, 5, "rock:mossy"],
+            [8, 6, "rock:round"],
+            [0, 7, "bonsai:pine"],
+            [5, 7, "house:tall"],
+            [0, 8, "rock:round"],
+            [1, 8, "rock:mossy"],
+            [3, 8, "rock:split"],
+            [4, 8, "house:gate"],
+            [5, 8, "rock:flat"],
+          ],
+        },
       ];
 
       let levelIndex = 0;
@@ -698,7 +740,7 @@
       let animationTime = 0;
       let hintMove = null;
       let hintTimer = 0;
-      let hintsLeft = 5;
+      let hintsLeft = Infinity;
       let easyMode = false;
       let resetRecommended = false;
       let completionHandled = false;
@@ -716,6 +758,7 @@
       const acerLeaves = [];
       const konamiCode = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
       const reachedGardenTwoKey = "zenGardenReachedGarden2";
+      const reachedGardenThreeKey = "zenGardenReachedGarden3";
       const koi = [
         { x: 0.07, y: 0.34, angle: 0.2, targetAngle: 0.2, nextTurn: 0, speed: 18, phase: 0.2, alpha: 0.7, spot: "#ff5a1d", fin: "#c9b7af" },
         { x: 0.18, y: 0.88, angle: -0.35, targetAngle: -0.35, nextTurn: 0, speed: 15, phase: 1.9, alpha: 0.62, spot: "#e24a18", fin: "#bba8a1" },
@@ -1188,7 +1231,7 @@
         activeStroke = [];
         hintMove = null;
         easyMode = isEasyMode();
-        hintsLeft = 5;
+        hintsLeft = Infinity;
         resetRecommended = false;
         completionHandled = false;
         positionHighlight = false;
@@ -1209,6 +1252,16 @@
             document.body.classList.add("garden-two-ready");
             if (options.showChallenge !== false) showChallengeModal();
           }, 2300);
+        } else if (levelIndex === 2) {
+          rememberGardenThree();
+          acerLeaves.length = 0;
+          lastLeafSpawn = 0;
+          gardenTwoIntroStart = 0;
+          gardenTwoIntroDone = false;
+          document.body.classList.remove("garden-two-intro", "garden-two-ready");
+          if (options.showChallenge !== false) {
+            challengeTimer = window.setTimeout(() => showChallengeModal(), 800);
+          }
         } else {
           acerLeaves.length = 0;
           lastLeafSpawn = 0;
@@ -1238,8 +1291,24 @@
         }
       }
 
+      function hasReachedGardenThree() {
+        try {
+          return window.localStorage?.getItem(reachedGardenThreeKey) === "true";
+        } catch {
+          return false;
+        }
+      }
+
+      function rememberGardenThree() {
+        try {
+          window.localStorage?.setItem(reachedGardenThreeKey, "true");
+        } catch {
+          return;
+        }
+      }
+
       function showChallengeModal() {
-        if (levelIndex !== 1) return;
+        if (levelIndex !== 1 && levelIndex !== 2) return;
         challengeModal.classList.add("show");
         challengeModal.setAttribute("aria-hidden", "false");
       }
@@ -1260,9 +1329,12 @@
         resetRecommended = false;
         hintMove = null;
         window.clearTimeout(hintTimer);
-        if (levelIndex === 0) {
+        if (levelIndex === 0 && !embedMode) {
           rememberGardenTwo();
           goToLevel(1, { showChallenge: true });
+        } else if (levelIndex === 1 && !embedMode) {
+          rememberGardenThree();
+          goToLevel(2, { showChallenge: true });
         } else {
           showMessage("Well done!", 0);
           showCompleteModal();
@@ -1271,9 +1343,12 @@
       }
 
       function levelFromLocation() {
+        if (window.location.pathname.includes("garden-3")) return 2;
+        if (new URLSearchParams(window.location.search).get("garden") === "3") return 2;
+        if (hasReachedGardenThree()) return 2;
         if (window.location.pathname.includes("garden-2")) return 1;
         if (new URLSearchParams(window.location.search).get("garden") === "2") return 1;
-        if (hasReachedGardenTwo()) return 1;
+        if (hasReachedGardenTwo()) return 2;
         return 0;
       }
 
@@ -1292,7 +1367,8 @@
 
       function levelPath(index) {
         const hash = isEasyMode() ? "#easy" : "";
-        return `${index === 1 ? "/garden-2/" : "/"}${hash}`;
+        const paths = ["/", "/garden-2/", "/garden-3/"];
+        return `${paths[index] ?? "/"}${hash}`;
       }
 
       function replaceLevelPath(index) {
@@ -1430,7 +1506,7 @@
       }
 
       function updateHintCounter() {
-        hintButton.textContent = easyMode ? "Hint (∞)" : `Hint (${hintsLeft})`;
+        hintButton.textContent = `Hint (∞)`;
       }
 
       function inBounds(tile) {
@@ -1539,7 +1615,7 @@
           showMessage("Tap the rake to begin.", 0);
           return;
         }
-        if (!easyMode && hintsLeft <= 0) {
+        if (!easyMode && hintsLeft <= 0 && hintsLeft !== Infinity) {
           showMessage("No hints left.");
           return;
         }
@@ -1572,7 +1648,7 @@
           from: { ...current },
           to: { x: current.x + hint.direction.x, y: current.y + hint.direction.y },
         };
-        if (!easyMode) hintsLeft -= 1;
+        if (!easyMode && hintsLeft !== Infinity) hintsLeft -= 1;
         updateHintCounter();
         showMessage(`Best direction: ${hint.direction.label}. ${hintsLeftText()}`);
         draw();
@@ -2212,7 +2288,7 @@
       hintButton.addEventListener("click", showHint);
       previousGardenButton.addEventListener("click", () => {
         hideChallengeModal();
-        goToLevel(0);
+        goToLevel(levelIndex - 1);
       });
       readyGardenButton.addEventListener("click", () => {
         hideChallengeModal();
@@ -2261,14 +2337,17 @@
         konamiIndex = key === konamiCode[0] ? 1 : 0;
       });
       paperTexture.addEventListener("load", draw);
-      const startingLevel = levelFromLocation();
-      setupLevel(startingLevel);
-      if (startingLevel > 0 || window.location.search.includes("garden=2")) {
+      const startingLevel = embedMode ? levels.length - 1 : levelFromLocation();
+      setupLevel(startingLevel, { showChallenge: false });
+      if (!embedMode && startingLevel > 0) {
         replaceLevelPath(startingLevel);
       }
       if (startingLevel === 1 || embedMode) {
         document.body.classList.remove("prestart");
         document.body.classList.add("intro-done");
+      }
+      if (startingLevel >= 2 || hasReachedGardenTwo()) {
+        document.body.classList.add("has-garden-two");
       }
       function finishIntro() {
         if (!document.body.classList.contains("intro")) return;
@@ -2284,6 +2363,11 @@
         window.setTimeout(finishIntro, 2220);
       }
       startButton.addEventListener("click", startIntro);
+      document.getElementById("gardenTwoButton").addEventListener("click", () => {
+        setupLevel(1, { showChallenge: false });
+        document.body.classList.remove("prestart");
+        document.body.classList.add("intro-done");
+      });
       document.querySelector(".stage").addEventListener("animationend", (event) => {
         if (event.animationName === "unfurl-paper") {
           window.setTimeout(finishIntro, 380);

@@ -30,7 +30,9 @@
       background: #ffffff;
       pointer-events: none;
       z-index: 1;
-      animation: reveal-waves 0.48s ease-in-out 1.85s forwards;
+    }
+    body.started #white-fade {
+      animation: reveal-waves 1.65s ease-in-out 0.18s forwards;
     }
     #torii-tunnel {
       position: fixed;
@@ -66,6 +68,61 @@
     }
     body.arrived #torii-tunnel {
       animation: tunnel-fade 0.28s ease-out forwards;
+    }
+    #start-prompt {
+      position: fixed;
+      left: 50%;
+      top: calc(50% + 205px);
+      z-index: 6;
+      min-height: 46px;
+      padding: 0 22px;
+      border: 1px solid rgba(166, 42, 24, 0.34);
+      border-radius: 999px;
+      background: rgba(255, 251, 238, 0.92);
+      color: #2c2c26;
+      font: 900 1rem/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0.02em;
+      box-shadow:
+        0 12px 28px rgba(7, 31, 48, 0.18),
+        0 0 0 5px rgba(255, 251, 238, 0.2);
+      transform: translateX(-50%);
+      cursor: pointer;
+      transition:
+        opacity 180ms ease,
+        transform 180ms ease;
+    }
+    body.started #start-prompt {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(8px);
+    }
+    #back-to-garden2 {
+      position: fixed;
+      left: 50%;
+      top: calc(50% + 262px);
+      z-index: 6;
+      min-height: 38px;
+      padding: 0 18px;
+      border: 1px solid rgba(166, 42, 24, 0.22);
+      border-radius: 999px;
+      background: rgba(255, 251, 238, 0.6);
+      color: #2c2c26;
+      font: 700 0.82rem/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0.02em;
+      box-shadow: 0 6px 16px rgba(7, 31, 48, 0.12);
+      transform: translateX(-50%);
+      cursor: pointer;
+      transition:
+        opacity 180ms ease,
+        transform 180ms ease;
+    }
+    #back-to-garden2 {
+      display: block;
+    }
+    body.started #back-to-garden2 {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(8px);
     }
     /* The red overlay that flashes when a wave is touched.
        Default (resting) state fades back over 1.5s; hit state fades in over .2s. */
@@ -168,6 +225,8 @@
     </defs>
     <g id="torii-run"></g>
   </svg>
+  <button id="start-prompt" type="button">Click to start</button>
+  <button id="back-to-garden2" type="button">go back to garden 2</button>
   <iframe id="game-portal" src="game.html?embed=1" title="Zen Puzzle Garden" allow="fullscreen"></iframe>
 
   <script>
@@ -175,6 +234,7 @@
       const SVG_NS = "http://www.w3.org/2000/svg";
       const stage = document.getElementById("stage");
       const toriiRun = document.getElementById("torii-run");
+      const startPrompt = document.getElementById("start-prompt");
 
       // --- palette (sampled from the reference image) ---
       const BLUE  = "#56a3dc";
@@ -254,10 +314,10 @@
       }
 
       let gateStart = 0;
-      function animateGateRun(now) {
+      let introStarted = false;
+
+      function drawGateRun(elapsed) {
         const ordered = [];
-        if (!gateStart) gateStart = now;
-        const elapsed = now - gateStart;
         const activeElapsed = Math.max(0, elapsed - GATE_HOLD_MS);
         const tunnelElapsed = activeElapsed - FIRST_GATE_MS * TUNNEL_RELEASE_AT;
 
@@ -297,6 +357,12 @@
         // Nearer gates need to draw last so they flash past in front.
         ordered.sort((a, b) => a.phase - b.phase);
         for (const item of ordered) toriiRun.appendChild(item.gate);
+      }
+
+      function animateGateRun(now) {
+        if (!gateStart) gateStart = now;
+        const elapsed = introStarted ? now - gateStart : 0;
+        drawGateRun(elapsed);
 
         requestAnimationFrame(animateGateRun);
       }
@@ -398,22 +464,38 @@
       buildGateRun();
       build();
       requestAnimationFrame(animateGateRun);
-      setTimeout(() => {
-        document.getElementById("white-fade")?.remove();
-      }, 2350);
 
       // After walking through the gates, the puzzle arrives in the centre.
       const gamePortal = document.getElementById("game-portal");
-      setTimeout(() => {
+      function startIntro() {
+        if (introStarted) return;
+        introStarted = true;
+        gateStart = performance.now();
+        document.body.classList.add("started");
+
+        setTimeout(() => {
+          document.getElementById("white-fade")?.remove();
+        }, 2350);
+
+        setTimeout(() => {
         document.body.classList.add("arrived");
         gamePortal.classList.add("is-active");
-      }, PORTAL_ARRIVAL_MS);
-      setTimeout(() => {
-        gamePortal.classList.add("is-playable");
-      }, PORTAL_PLAYABLE_MS);
-      setTimeout(() => {
-        document.getElementById("torii-tunnel")?.remove();
-      }, TUNNEL_REMOVE_MS);
+        }, PORTAL_ARRIVAL_MS);
+
+        setTimeout(() => {
+          gamePortal.classList.add("is-playable");
+        }, PORTAL_PLAYABLE_MS);
+
+        setTimeout(() => {
+          document.getElementById("torii-tunnel")?.remove();
+        }, TUNNEL_REMOVE_MS);
+      }
+
+      startPrompt.addEventListener("click", startIntro);
+
+      document.getElementById("back-to-garden2").addEventListener("click", () => {
+        window.location.href = "game.html?garden=2";
+      });
       let rt;
       window.addEventListener("resize", () => {
         clearTimeout(rt);
