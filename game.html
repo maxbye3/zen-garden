@@ -637,6 +637,13 @@
       const completeModal = document.querySelector("#completeModal");
       const paperTexture = new Image();
       paperTexture.src = "assets/zen-paper.webp";
+
+      const garden3Sprites = ["g3-bell","g3-shrine","g3-kodama","g3-lantern","g3-matcha"].map(name => {
+        const img = new Image();
+        img.src = `garden-3/${name}.png`;
+        img.addEventListener("load", draw);
+        return img;
+      });
       const params = new URLSearchParams(window.location.search);
       const embedMode = params.get("embed") === "1";
       if (embedMode) {
@@ -1986,6 +1993,30 @@
       function drawObstacles() {
         ctx.save();
         ctx.globalAlpha *= itemAlpha();
+
+        if (levelIndex === 2) {
+          for (const [id] of obstacles) {
+            const [x, y] = id.split(",").map(Number);
+            const imgIdx = ((x * 3 + y * 7) % garden3Sprites.length + garden3Sprites.length) % garden3Sprites.length;
+            const img = garden3Sprites[imgIdx];
+            const cx = boardLeft + x * cell + cell / 2;
+            const cy = boardTop + y * cell + cell / 2;
+            const size = cell * 0.9;
+            // Shadow
+            ctx.save();
+            ctx.fillStyle = "rgba(45,45,42,0.18)";
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + size * 0.44, size * 0.38, size * 0.1, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            if (img.complete && img.naturalWidth > 0) {
+              ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
+            }
+          }
+          ctx.restore();
+          return;
+        }
+
         for (const [id, type] of obstacles) {
           const [x, y] = id.split(",").map(Number);
           const [kind, variant = "round"] = type.split(":");
