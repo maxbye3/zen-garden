@@ -262,32 +262,39 @@
         isolation: isolate;
       }
 
-      @keyframes title-wave {
-        from { background-position: 0 center; }
-        to   { background-position: -400px center; }
-      }
-
       body.embed h1 {
         position: relative;
         z-index: 1;
         display: inline-block;
-        padding: 2px 10px 6px;
+        padding: 2px 10px 4px;
+        border-radius: 14px;
+        color: #fff8e8;
+        letter-spacing: 0.01em;
         font-weight: 900;
-        letter-spacing: 0.02em;
-        /* Animated red wave SVG clipped to letter shapes */
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='80'%3E%3Cpath d='M-400%2C38 C-375%2C18 -325%2C58 -300%2C38 C-275%2C18 -225%2C58 -200%2C38 C-175%2C18 -125%2C58 -100%2C38 C-75%2C18 -25%2C58 0%2C38 C25%2C18 75%2C58 100%2C38 C125%2C18 175%2C58 200%2C38 C225%2C18 275%2C58 300%2C38 C325%2C18 375%2C58 400%2C38 C425%2C18 475%2C58 500%2C38 L500%2C80 L-400%2C80 Z' fill='%23e03535'/%3E%3Cpath d='M-400%2C50 C-375%2C30 -325%2C70 -300%2C50 C-275%2C30 -225%2C70 -200%2C50 C-175%2C30 -125%2C70 -100%2C50 C-75%2C30 -25%2C70 0%2C50 C25%2C30 75%2C70 100%2C50 C125%2C30 175%2C70 200%2C50 C225%2C30 275%2C70 300%2C50 C325%2C30 375%2C70 400%2C50 C425%2C30 475%2C70 500%2C50 L500%2C80 L-400%2C80 Z' fill='%23b02020' opacity='0.55'/%3E%3C/svg%3E");
-        background-size: 400px 100%;
-        background-repeat: repeat-x;
-        background-position: 0 center;
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-        animation: title-wave 2.4s linear infinite;
-        /* Stroke/glow so letters stay legible against the wave bg */
-        filter: drop-shadow(0 2px 3px rgba(0,0,0,0.55)) drop-shadow(0 0 8px rgba(224,53,53,0.45));
+        text-shadow:
+          0 2px 0 rgba(3, 20, 30, 0.42),
+          0 0 12px rgba(3, 20, 30, 0.68),
+          0 0 24px rgba(255, 246, 214, 0.22);
       }
 
-      body.embed h1::before { content: none; }
+      body.embed h1::before {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        inset: -5px -12px -7px;
+        border-radius: 999px;
+        background:
+          radial-gradient(ellipse at 18% 40%, rgba(255, 248, 220, 0.46), transparent 42%),
+          linear-gradient(90deg, rgba(7, 31, 48, 0.74), rgba(7, 31, 48, 0.48));
+        backdrop-filter: invert(1) contrast(1.25) saturate(1.15) blur(1px);
+        -webkit-backdrop-filter: invert(1) contrast(1.25) saturate(1.15) blur(1px);
+        box-shadow:
+          0 0 0 1px rgba(255, 248, 224, 0.26),
+          0 8px 22px rgba(7, 31, 48, 0.24);
+        opacity: 1;
+        mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+        -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+      }
 
       .stage::after {
         content: "";
