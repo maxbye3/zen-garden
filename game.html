@@ -2018,12 +2018,6 @@
               const cx = boardLeft + x * cell + cell / 2;
               const cy = boardTop + y * cell + cell / 2;
               const size = cell * 1.18;
-              ctx.save();
-              ctx.fillStyle = "rgba(45,45,42,0.18)";
-              ctx.beginPath();
-              ctx.ellipse(cx, cy + size * 0.44, size * 0.38, size * 0.1, 0, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.restore();
               if (img.complete && img.naturalWidth > 0) {
                 ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
               }
