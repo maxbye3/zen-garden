@@ -2106,28 +2106,25 @@
               const cx = boardLeft + x * cell + cell / 2;
               const cy = boardTop + y * cell + cell / 2;
               const size = cell * 1.18;
-              if (img.complete && img.naturalWidth > 0) {
-                ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
-              }
               if (customIdx === 2) {
-                // Waving arm on the kodama — drawn on top of the sprite
-                const wave = Math.sin(animationTime * 0.0032) * size * 0.07;
-                const sx = cx - size * 0.04;   // shoulder
-                const sy = cy + size * 0.07;
-                const ex = cx + size * 0.10;   // elbow
-                const ey = cy + size * 0.00;
-                const hx = cx + size * 0.13;   // hand
-                const hy = cy - size * 0.10 + wave;
+                // Right arm drawn BEFORE sprite so it sits behind the kodama
+                const wave = Math.sin(animationTime * 0.0032) * size * 0.04;
                 ctx.save();
                 ctx.strokeStyle = "#dedad0";
-                ctx.lineWidth = Math.max(2, size * 0.065);
+                ctx.lineWidth = Math.max(1, size * 0.038);
                 ctx.lineCap = "round";
                 ctx.lineJoin = "round";
                 ctx.beginPath();
-                ctx.moveTo(sx, sy);
-                ctx.quadraticCurveTo(ex, ey, hx, hy);
+                ctx.moveTo(cx - size * 0.09, cy + size * 0.05);   // shoulder (kodama's right = viewer's left)
+                ctx.quadraticCurveTo(
+                  cx - size * 0.18, cy - size * 0.04,             // elbow
+                  cx - size * 0.24, cy - size * 0.14 + wave        // hand
+                );
                 ctx.stroke();
                 ctx.restore();
+              }
+              if (img.complete && img.naturalWidth > 0) {
+                ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
               }
             } else {
               const [kind, variant = "round"] = type.split(":");
