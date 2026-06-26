@@ -2111,7 +2111,7 @@
               const cy = boardTop + y * cell + cell / 2;
               const size = cell * 1.18;
               if (customIdx === 2) {
-                const ky = cy + cell * 0.23; // kodama shifted down ~10px CSS
+                const ky = cy - cell * 0.12; // kodama shifted up ~5px CSS from original
                 // Right arm drawn BEFORE sprite so it sits behind the kodama
                 const wave = Math.sin(animationTime * 0.0032) * size * 0.04;
                 ctx.save();
