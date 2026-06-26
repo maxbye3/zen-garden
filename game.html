@@ -808,7 +808,9 @@
       let gardenTwoIntroDone = false;
       let konamiIndex = 0;
       let gongPlayed = false;
+      let bellPlayed = false;
       const gongAudio = new Audio("garden-3/gong.mp3");
+      const bellAudio = new Audio("garden-3/bell.mp3");
       const ripples = [];
       const acerLeaves = [];
       const konamiCode = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
@@ -1292,6 +1294,7 @@
         positionHighlight = false;
         rakeVisible = true;
         gongPlayed = false;
+        bellPlayed = false;
         challengeModal.classList.remove("show");
         challengeModal.setAttribute("aria-hidden", "true");
         completeModal.classList.remove("show");
@@ -1530,9 +1533,14 @@
         path.push(move);
         activeStroke.push(move);
         current = { ...to };
-        if (levelIndex === 2 && !gongPlayed) {
-          const nearBell = result.cells.some(t => Math.abs(t.x - 3) + Math.abs(t.y - 3) === 1);
-          if (nearBell) {
+        if (levelIndex === 2) {
+          const adj = (t, x, y) => Math.abs(t.x - x) + Math.abs(t.y - y) === 1;
+          if (!bellPlayed && result.cells.some(t => adj(t, 3, 3))) {
+            bellPlayed = true;
+            bellAudio.currentTime = 0;
+            bellAudio.play().catch(() => {});
+          }
+          if (!gongPlayed && result.cells.some(t => adj(t, 5, 7))) {
             gongPlayed = true;
             gongAudio.currentTime = 0;
             gongAudio.play().catch(() => {});
