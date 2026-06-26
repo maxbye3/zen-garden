@@ -1423,8 +1423,13 @@
 
       function levelPath(index) {
         const hash = isEasyMode() ? "#easy" : "";
-        const paths = ["/", "/garden-2/", "/garden-3/"];
-        return `${paths[index] ?? "/"}${hash}`;
+        // Derive base path from where game.html is actually served, stripping
+        // any garden-N/ suffix that may have been pushed by a previous navigation.
+        const base = window.location.pathname
+          .replace(/[^/]*$/, "")
+          .replace(/\/(garden-[23])\/$/, "/");
+        const suffixes = ["", "garden-2/", "garden-3/"];
+        return `${base}${suffixes[index] ?? ""}${hash}`;
       }
 
       function replaceLevelPath(index) {
