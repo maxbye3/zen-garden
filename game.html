@@ -2138,12 +2138,6 @@
                 if (img.complete && img.naturalWidth > 0) {
                   ctx.drawImage(img, cx - size / 2, ky - size / 2, size, size);
                 }
-              } else if (customIdx === 4 && img.complete && img.naturalWidth > 0) {
-                // teaset: draw spanning full grid width
-                const gridW = cell * level.size;
-                const gridCx = boardLeft + gridW / 2;
-                const drawH = cell * 1.18;
-                ctx.drawImage(img, gridCx - gridW / 2, cy - drawH / 2, gridW, drawH);
               } else if (img.complete && img.naturalWidth > 0) {
                 ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
               }
