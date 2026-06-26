@@ -1390,7 +1390,8 @@
           goToLevel(1, { showChallenge: true });
         } else if (levelIndex === 1 && !embedMode) {
           rememberGardenThree();
-          goToLevel(2, { showChallenge: true });
+          const base = window.location.pathname.replace(/[^/]*$/, "").replace(/\/(garden-[23]|waves)\/$/, "/");
+          window.location.href = `${base}waves.html`;
         } else {
           showMessage("Well done!", 0);
           showCompleteModal();
