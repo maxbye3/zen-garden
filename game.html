@@ -39,16 +39,21 @@
       .app {
         position: relative;
         z-index: 1;
-        min-height: 100svh;
+        height: 100dvh;
         display: grid;
         grid-template-rows: auto 1fr;
-        gap: 10px;
-        padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+        gap: 6px;
+        padding:
+          max(10px, env(safe-area-inset-top))
+          max(0px, env(safe-area-inset-right))
+          max(10px, env(safe-area-inset-bottom))
+          max(0px, env(safe-area-inset-left));
       }
 
       .topbar {
-        width: min(100%, 440px);
+        width: min(100%, 500px);
         margin: 0 auto;
+        padding: 0 10px;
         display: grid;
         gap: 8px;
         transition:
@@ -121,10 +126,13 @@
         display: grid;
         place-items: center;
         min-height: 0;
+        container-type: size;
+        overflow: hidden;
       }
 
       .stage {
-        width: min(100%, 430px);
+        width: min(100cqw, calc(100cqh * 10 / 14));
+        max-height: 100cqh;
         aspect-ratio: 10 / 14;
         position: relative;
         border: 2px solid #90633f;
@@ -251,7 +259,31 @@
       }
 
       body.embed .app {
-        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+        min-height: unset;
+        padding: 0;
+        gap: 0;
+      }
+
+      body.embed .board-wrap {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      body.embed .stage {
+        width: min(100dvw, calc(100dvh * 10 / 14)) !important;
+        height: min(100dvh, calc(100dvw * 14 / 10)) !important;
+        max-height: none !important;
+      }
+
+      body.embed .topbar {
+        display: none;
       }
 
       body.embed #levelLabel {
@@ -645,12 +677,20 @@
       const paperTexture = new Image();
       paperTexture.src = "assets/zen-paper.webp";
 
-      const garden3Sprites = ["g3-bell","g3-shrine","g3-kodama","g3-lantern","g3-matcha"].map(name => {
+      const garden3Sprites = ["temple-bell","kitsune-shrine","kodama","stone-lantern","teaset"].map(name => {
         const img = new Image();
         img.src = `garden-3/${name}.png`;
         img.addEventListener("load", draw);
         return img;
       });
+      const stoneLanternSprite = garden3Sprites[3];
+
+      function drawSpriteAtCell(img, x, y) {
+        const cx = boardLeft + x * cell + cell / 2;
+        const cy = boardTop + y * cell + cell / 2;
+        const size = cell * 1.18;
+        if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
+      }
       const params = new URLSearchParams(window.location.search);
       const embedMode = params.get("embed") === "1";
       if (embedMode) {
@@ -719,7 +759,7 @@
             [3, 3, "rock:split"],
             [5, 3, "rock:round"],
             [1, 4, "rock:flat"],
-            [3, 4, "bonsai:pine"],
+            [3, 4, "rock:round"],
             [5, 4, "house:tall"],
             [1, 5, "rock:mossy"],
             [3, 5, "bonsai:pine"],
@@ -767,6 +807,8 @@
       let gardenTwoIntroStart = 0;
       let gardenTwoIntroDone = false;
       let konamiIndex = 0;
+      let gongPlayed = false;
+      const gongAudio = new Audio("garden-3/gong.mp3");
       const ripples = [];
       const acerLeaves = [];
       const konamiCode = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
@@ -1249,6 +1291,7 @@
         completionHandled = false;
         positionHighlight = false;
         rakeVisible = true;
+        gongPlayed = false;
         challengeModal.classList.remove("show");
         challengeModal.setAttribute("aria-hidden", "true");
         completeModal.classList.remove("show");
@@ -1407,12 +1450,15 @@
       }
 
       function boardMetrics() {
-        const pad = canvas.width * 0.075;
-        const topBand = canvas.height * 0.16;
-        const usable = canvas.width - pad * 2;
+        const minPad = canvas.width * 0.012;
+        const topBand = canvas.height * 0.24;
+        const bottomBand = canvas.height * 0.1;
+        const availH = canvas.height - topBand - bottomBand;
+        const maxW = canvas.width - minPad * 2;
+        const usable = Math.min(maxW, availH);
         cell = usable / level.size;
-        boardLeft = pad;
-        boardTop = topBand + (canvas.height - topBand - usable) * 0.5;
+        boardLeft = (canvas.width - usable) / 2;
+        boardTop = topBand + (availH - usable) / 2;
       }
 
       function tileAtCanvasPoint(px, py) {
@@ -1478,6 +1524,14 @@
         path.push(move);
         activeStroke.push(move);
         current = { ...to };
+        if (levelIndex === 2 && !gongPlayed) {
+          const nearBell = result.cells.some(t => Math.abs(t.x - 3) + Math.abs(t.y - 3) === 1);
+          if (nearBell) {
+            gongPlayed = true;
+            gongAudio.currentTime = 0;
+            gongAudio.play().catch(() => {});
+          }
+        }
         handleCompletion();
         draw();
         return true;
@@ -1904,14 +1958,42 @@
           ctx.lineTo(cx + cell * 0.02, cy + cell * 0.15);
           ctx.stroke();
         }
-        if (variant === "mossy" || variant === "flat") {
-          ctx.fillStyle = "#6d8b5f";
+
+        // Moss — chunky base patches on every rock
+        ctx.fillStyle = "#527a44";
+        ctx.beginPath();
+        ctx.ellipse(cx - cell * 0.24, cy + cell * 0.11, cell * 0.16, cell * 0.07, -0.25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(cx + cell * 0.12, cy + cell * 0.13, cell * 0.14, cell * 0.06, 0.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#6aaa55";
+        ctx.beginPath();
+        ctx.ellipse(cx - cell * 0.05, cy + cell * 0.15, cell * 0.15, cell * 0.062, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#5e9650";
+        ctx.beginPath();
+        ctx.ellipse(cx - cell * 0.2, cy - cell * 0.01, cell * 0.12, cell * 0.052, -0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(cx + cell * 0.1, cy + cell * 0.04, cell * 0.11, cell * 0.046, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (variant === "mossy") {
+          // Dense extra coverage for the mossy variant
+          ctx.fillStyle = "#4a7a3e";
           ctx.beginPath();
-          ctx.ellipse(cx - cell * 0.17, cy - cell * 0.02, cell * 0.09, cell * 0.035, -0.35, 0, Math.PI * 2);
+          ctx.ellipse(cx + cell * 0.24, cy - cell * 0.06, cell * 0.13, cell * 0.055, 0.4, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = "#78986a";
+          ctx.fillStyle = "#72b85c";
           ctx.beginPath();
-          ctx.ellipse(cx + cell * 0.08, cy + cell * 0.07, cell * 0.07, cell * 0.03, 0.2, 0, Math.PI * 2);
+          ctx.ellipse(cx - cell * 0.12, cy - cell * 0.12, cell * 0.12, cell * 0.05, -0.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(cx + cell * 0.02, cy + cell * 0.1, cell * 0.13, cell * 0.052, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(cx - cell * 0.28, cy + cell * 0.06, cell * 0.1, cell * 0.042, -0.5, 0, Math.PI * 2);
           ctx.fill();
         }
       }
@@ -2007,7 +2089,7 @@
             ["3,3", 0],
             ["5,3", 1],
             ["1,5", 2],
-            ["5,4", 3],
+            ["4,8", 3],
             ["3,5", 4],
           ]);
           for (const [id, type] of obstacles) {
@@ -2021,9 +2103,29 @@
               if (img.complete && img.naturalWidth > 0) {
                 ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
               }
+              if (customIdx === 2) {
+                // Waving arm on the kodama — drawn on top of the sprite
+                const wave = Math.sin(animationTime * 0.0032) * size * 0.07;
+                const sx = cx - size * 0.04;   // shoulder
+                const sy = cy + size * 0.07;
+                const ex = cx + size * 0.10;   // elbow
+                const ey = cy + size * 0.00;
+                const hx = cx + size * 0.13;   // hand
+                const hy = cy - size * 0.10 + wave;
+                ctx.save();
+                ctx.strokeStyle = "#dedad0";
+                ctx.lineWidth = Math.max(2, size * 0.065);
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                ctx.quadraticCurveTo(ex, ey, hx, hy);
+                ctx.stroke();
+                ctx.restore();
+              }
             } else {
               const [kind, variant = "round"] = type.split(":");
-              if (kind === "house") drawStoneLantern(x, y, variant);
+              if (kind === "house") drawSpriteAtCell(stoneLanternSprite, x, y);
               else if (kind === "bonsai") drawBonsai(x, y, variant);
               else if (kind === "pond" && variant === "koi") drawGardenPond(x, y);
               else if (kind === "pond") { /* skip */ }
@@ -2037,7 +2139,10 @@
         for (const [id, type] of obstacles) {
           const [x, y] = id.split(",").map(Number);
           const [kind, variant = "round"] = type.split(":");
-          if (kind === "house") drawStoneLantern(x, y, variant);
+          if (kind === "house") {
+            if (levelIndex === 1) drawSpriteAtCell(stoneLanternSprite, x, y);
+            else drawStoneLantern(x, y, variant);
+          }
           else if (kind === "bonsai") drawBonsai(x, y, variant);
           else if (kind === "pond" && variant === "koi") drawGardenPond(x, y);
           else if (kind === "pond") continue;

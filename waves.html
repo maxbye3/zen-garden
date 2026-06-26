@@ -47,21 +47,26 @@
     }
     #game-portal {
       position: fixed;
-      left: 50%;
-      top: 50%;
-      width: min(430px, 92vw);
-      height: min(92vh, 760px);
+      inset: 0;
+      width: 100%;
+      height: 100%;
       border: 0;
       background: transparent;
       opacity: 0;
       pointer-events: none;
-      transform: translate(-50%, -50%) scale(0.04);
-      transform-origin: center;
+      transform: scale(0.04);
+      transform-origin: center center;
       z-index: 5;
       will-change: transform, opacity;
     }
     #game-portal.is-active {
       animation: portal-approach 0.38s cubic-bezier(0.14, 0.8, 0.2, 1) forwards;
+    }
+    #game-portal.skip {
+      animation: none !important;
+      opacity: 1;
+      transform: scale(1);
+      filter: none;
     }
     #game-portal.is-playable {
       pointer-events: auto;
@@ -115,6 +120,29 @@
       transition:
         opacity 180ms ease,
         transform 180ms ease;
+    }
+    #skip-animation {
+      position: fixed;
+      left: 50%;
+      top: calc(50% + 318px);
+      transform: translateX(-50%);
+      z-index: 7;
+      min-height: 34px;
+      padding: 0 18px;
+      border: 1px solid rgba(166, 42, 24, 0.18);
+      border-radius: 999px;
+      background: rgba(255, 251, 238, 0.45);
+      color: #2c2c26;
+      font: 600 0.78rem/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0.02em;
+      box-shadow: 0 4px 12px rgba(7, 31, 48, 0.1);
+      cursor: pointer;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+    body.started #skip-animation {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(8px);
     }
     #back-to-garden2 {
       display: block;
@@ -176,7 +204,7 @@
     @keyframes portal-approach {
       0% {
         opacity: 0;
-        transform: translate(-50%, -50%) scale(0.04);
+        transform: scale(0.04);
         filter: brightness(1.25) blur(3px);
       }
       22% {
@@ -187,7 +215,7 @@
       }
       100% {
         opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
+        transform: scale(1);
         filter: brightness(1) blur(0);
       }
     }
@@ -226,6 +254,7 @@
     <g id="torii-run"></g>
   </svg>
   <button id="start-prompt" type="button">Click to start</button>
+  <button id="skip-animation" type="button">Skip</button>
   <button id="back-to-garden2" type="button">go back to garden 2</button>
   <iframe id="game-portal" src="game.html?embed=1" title="Zen Puzzle Garden" allow="fullscreen"></iframe>
 
@@ -478,8 +507,14 @@
         }, 2350);
 
         setTimeout(() => {
-        document.body.classList.add("arrived");
-        gamePortal.classList.add("is-active");
+          document.body.classList.add("arrived");
+          gamePortal.classList.add("is-active");
+          gamePortal.addEventListener("animationend", () => {
+            gamePortal.classList.remove("is-active");
+            gamePortal.style.opacity = "1";
+            gamePortal.style.transform = "scale(1)";
+            gamePortal.style.filter = "none";
+          }, { once: true });
         }, PORTAL_ARRIVAL_MS);
 
         setTimeout(() => {
@@ -491,7 +526,20 @@
         }, TUNNEL_REMOVE_MS);
       }
 
+      const skipBtn = document.getElementById("skip-animation");
+
+      function skipIntro() {
+        introStarted = true;
+        gateStart = performance.now();
+        document.body.classList.add("started", "arrived");
+        document.getElementById("white-fade")?.remove();
+        document.getElementById("torii-tunnel")?.remove();
+        gamePortal.classList.remove("is-active");
+        gamePortal.classList.add("skip", "is-playable");
+      }
+
       startPrompt.addEventListener("click", startIntro);
+      skipBtn.addEventListener("click", skipIntro);
 
       document.getElementById("back-to-garden2").addEventListener("click", () => {
         window.location.href = "game.html?garden=2";
