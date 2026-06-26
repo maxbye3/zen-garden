@@ -677,7 +677,7 @@
       const paperTexture = new Image();
       paperTexture.src = "assets/zen-paper.webp";
 
-      const garden3Sprites = ["temple-bell","kitsune-shrine","kodama","stone-lantern","teaset"].map(name => {
+      const garden3Sprites = ["temple-bell","kitsune-shrine","kodama","stone-lantern","teaset","tanuki-shrine"].map(name => {
         const img = new Image();
         img.src = `garden-3/${name}.png`;
         img.addEventListener("load", draw);
@@ -2097,6 +2097,7 @@
             ["1,5", 2],
             ["4,8", 3],
             ["3,5", 4],
+            ["5,7", 5],
           ]);
           for (const [id, type] of obstacles) {
             const customIdx = g3custom.get(id);
