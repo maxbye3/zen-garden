@@ -91,6 +91,21 @@
         gap: 12px;
       }
 
+      #backToGarden1 {
+        display: none;
+        min-height: 34px;
+        padding: 0 12px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        background: rgba(255, 251, 238, 0.58);
+        box-shadow: 0 3px 8px rgba(35, 29, 20, 0.1);
+        flex-shrink: 0;
+      }
+
+      body.on-garden-2 #backToGarden1 {
+        display: block;
+      }
+
       h1 {
         margin: 0;
         font-size: 1.55rem;
@@ -638,6 +653,7 @@
     <main class="app">
       <header class="topbar">
         <div class="title-row">
+          <button id="backToGarden1" type="button">← Garden 1</button>
           <h1 id="mainTitle">Zen Puzzle Garden</h1>
           <div class="level" id="levelLabel">Garden 1</div>
         </div>
@@ -1301,7 +1317,7 @@
         completeModal.setAttribute("aria-hidden", "true");
         if (levelIndex === 1) {
           rememberGardenTwo();
-          document.body.classList.add("garden-two-intro");
+          document.body.classList.add("garden-two-intro", "on-garden-2");
           document.body.classList.remove("garden-two-ready");
           gardenTwoIntroStart = 0;
           gardenTwoIntroDone = false;
@@ -1309,7 +1325,6 @@
             gardenTwoIntroDone = true;
             document.body.classList.remove("garden-two-intro");
             document.body.classList.add("garden-two-ready");
-            if (options.showChallenge !== false) showChallengeModal();
           }, 2300);
         } else if (levelIndex === 2) {
           rememberGardenThree();
@@ -1317,16 +1332,13 @@
           lastLeafSpawn = 0;
           gardenTwoIntroStart = 0;
           gardenTwoIntroDone = false;
-          document.body.classList.remove("garden-two-intro", "garden-two-ready");
-          if (options.showChallenge !== false) {
-            challengeTimer = window.setTimeout(() => showChallengeModal(), 800);
-          }
+          document.body.classList.remove("garden-two-intro", "garden-two-ready", "on-garden-2");
         } else {
           acerLeaves.length = 0;
           lastLeafSpawn = 0;
           gardenTwoIntroStart = 0;
           gardenTwoIntroDone = false;
-          document.body.classList.remove("garden-two-intro", "garden-two-ready");
+          document.body.classList.remove("garden-two-intro", "garden-two-ready", "on-garden-2");
         }
         levelLabel.textContent = level.name;
         updateHintCounter();
@@ -1390,7 +1402,7 @@
         window.clearTimeout(hintTimer);
         if (levelIndex === 0 && !embedMode) {
           rememberGardenTwo();
-          goToLevel(1, { showChallenge: true });
+          goToLevel(1, { showChallenge: false });
         } else if (levelIndex === 1 && !embedMode) {
           rememberGardenThree();
           const base = window.location.pathname.replace(/[^/]*$/, "").replace(/\/(garden-[23]|waves)\/$/, "/");
@@ -2457,6 +2469,7 @@
 
       resetButton.addEventListener("click", () => setupLevel(levelIndex, { showChallenge: false }));
       hintButton.addEventListener("click", showHint);
+      document.getElementById("backToGarden1").addEventListener("click", () => goToLevel(0));
       previousGardenButton.addEventListener("click", () => {
         hideChallengeModal();
         goToLevel(levelIndex - 1);
