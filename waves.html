@@ -52,32 +52,6 @@
     body.arrived #torii-canvas {
       animation: tunnel-fade 0.28s ease-out forwards;
     }
-    #game-portal {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      border: 0;
-      background: transparent;
-      opacity: 0;
-      pointer-events: none;
-      transform: scale(0.04);
-      transform-origin: center center;
-      z-index: 5;
-      will-change: transform, opacity;
-    }
-    #game-portal.is-active {
-      animation: portal-approach 0.38s cubic-bezier(0.14, 0.8, 0.2, 1) forwards;
-    }
-    #game-portal.skip {
-      animation: none !important;
-      opacity: 1;
-      transform: scale(1);
-      filter: none;
-    }
-    #game-portal.is-playable {
-      pointer-events: auto;
-    }
     #start-prompt {
       position: fixed;
       left: 50%;
@@ -166,12 +140,6 @@
     @keyframes tunnel-fade {
       to { opacity: 0; }
     }
-    @keyframes portal-approach {
-      0%   { opacity: 0; transform: scale(0.04); filter: brightness(1.25) blur(3px); }
-      22%  { opacity: 1; }
-      72%  { filter: brightness(1.06) blur(0.4px); }
-      100% { opacity: 1; transform: scale(1); filter: brightness(1) blur(0); }
-    }
   </style>
 </head>
 <body>
@@ -180,8 +148,6 @@
   <canvas id="torii-canvas" aria-hidden="true"></canvas>
   <button id="start-prompt" type="button">Click to start</button>
   <button id="back-to-garden2" type="button">go back to garden 2</button>
-  <iframe id="game-portal" src="game.html?embed=1" title="Zen Puzzle Garden" allow="fullscreen"></iframe>
-
   <script>
     (function () {
       const SVG_NS = "http://www.w3.org/2000/svg";
@@ -217,8 +183,6 @@
       const GATE_SPAWN_MS      = 130;   // gap between each gate spawning
       const GATE_CENTER_X      = 500;
       const GATE_VANISH_Y      = 660;   // fixed spawn Y (no moving the vanishing point)
-      const PORTAL_ARRIVAL_MS  = 1900;
-      const PORTAL_PLAYABLE_MS = 2300;
       const TUNNEL_REMOVE_MS   = 1850;
 
       // --- Canvas torii renderer ---
@@ -445,8 +409,6 @@
       build();
       requestAnimationFrame(animateGateRun);
 
-      const gamePortal = document.getElementById("game-portal");
-
       function startIntro() {
         if (introStarted) return;
         introStarted = true;
@@ -454,21 +416,11 @@
         document.body.classList.add("started");
 
         setTimeout(() => document.getElementById("white-fade")?.remove(), 2350);
-
         setTimeout(() => {
           document.body.classList.add("arrived");
-          gamePortal.classList.add("is-active");
-          gamePortal.addEventListener("animationend", () => {
-            gamePortal.classList.remove("is-active");
-            gamePortal.style.opacity   = "1";
-            gamePortal.style.transform = "scale(1)";
-            gamePortal.style.filter    = "none";
-          }, { once: true });
-        }, PORTAL_ARRIVAL_MS);
-
-        setTimeout(() => gamePortal.classList.add("is-playable"), PORTAL_PLAYABLE_MS);
-
-        setTimeout(() => { tunnelVisible = false; toriiCtx.clearRect(0, 0, toriiCanvas.width, toriiCanvas.height); }, TUNNEL_REMOVE_MS);
+          tunnelVisible = false;
+          toriiCtx.clearRect(0, 0, toriiCanvas.width, toriiCanvas.height);
+        }, TUNNEL_REMOVE_MS);
       }
 
       startPrompt.addEventListener("click", startIntro);

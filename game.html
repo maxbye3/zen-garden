@@ -693,25 +693,10 @@
       const paperTexture = new Image();
       paperTexture.src = "assets/zen-paper.webp";
 
-      const garden3Sprites = ["temple-bell","kitsune-shrine","kodama","stone-lantern","teaset","tanuki-shrine","spirit-lantern","dragon-shrine","temple-gong"].map(name => {
-        const img = new Image();
-        img.src = `garden-3/${name}.png`;
-        img.addEventListener("load", draw);
-        return img;
-      });
-      const stoneLanternSprite = garden3Sprites[3];
-
-      function drawSpriteAtCell(img, x, y) {
-        const cx = boardLeft + x * cell + cell / 2;
-        const cy = boardTop + y * cell + cell / 2;
-        const size = cell * 1.18;
-        if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
-      }
       const params = new URLSearchParams(window.location.search);
       const embedMode = params.get("embed") === "1";
       if (embedMode) {
         document.body.classList.add("embed");
-        document.getElementById("mainTitle").textContent = "Garden 3";
       }
 
       const directions = [
@@ -761,35 +746,6 @@
             [4, 4, "pond:block"],
           ],
         },
-        {
-          name: "Garden 3",
-          size: 9,
-          start: [8, 8],
-          stones: [
-            [0, 0, "house:wide"],
-            [5, 0, "rock:flat"],
-            [0, 1, "rock:split"],
-            [2, 1, "house:tall"],
-            [7, 1, "house:gate"],
-            [1, 3, "house:tall"],
-            [3, 3, "rock:split"],
-            [5, 3, "rock:round"],
-            [1, 4, "rock:flat"],
-            [3, 4, "rock:round"],
-            [5, 4, "house:tall"],
-            [1, 5, "rock:mossy"],
-            [3, 5, "bonsai:pine"],
-            [8, 5, "rock:mossy"],
-            [8, 6, "rock:round"],
-            [0, 7, "bonsai:pine"],
-            [5, 7, "house:tall"],
-            [0, 8, "rock:round"],
-            [1, 8, "rock:mossy"],
-            [3, 8, "rock:split"],
-            [4, 8, "house:gate"],
-            [5, 8, "rock:flat"],
-          ],
-        },
       ];
 
       let levelIndex = 0;
@@ -823,15 +779,10 @@
       let gardenTwoIntroStart = 0;
       let gardenTwoIntroDone = false;
       let konamiIndex = 0;
-      let gongPlayed = false;
-      let bellPlayed = false;
-      const gongAudio = new Audio("garden-3/gong.mp3");
-      const bellAudio = new Audio("garden-3/bell.mp3");
       const ripples = [];
       const acerLeaves = [];
       const konamiCode = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
       const reachedGardenTwoKey = "zenGardenReachedGarden2";
-      const reachedGardenThreeKey = "zenGardenReachedGarden3";
       const koi = [
         { x: 0.07, y: 0.34, angle: 0.2, targetAngle: 0.2, nextTurn: 0, speed: 18, phase: 0.2, alpha: 0.7, spot: "#ff5a1d", fin: "#c9b7af" },
         { x: 0.18, y: 0.88, angle: -0.35, targetAngle: -0.35, nextTurn: 0, speed: 15, phase: 1.9, alpha: 0.62, spot: "#e24a18", fin: "#bba8a1" },
@@ -1309,8 +1260,6 @@
         completionHandled = false;
         positionHighlight = false;
         rakeVisible = true;
-        gongPlayed = false;
-        bellPlayed = false;
         challengeModal.classList.remove("show");
         challengeModal.setAttribute("aria-hidden", "true");
         completeModal.classList.remove("show");
@@ -1326,13 +1275,6 @@
             document.body.classList.remove("garden-two-intro");
             document.body.classList.add("garden-two-ready");
           }, 2300);
-        } else if (levelIndex === 2) {
-          rememberGardenThree();
-          acerLeaves.length = 0;
-          lastLeafSpawn = 0;
-          gardenTwoIntroStart = 0;
-          gardenTwoIntroDone = false;
-          document.body.classList.remove("garden-two-intro", "garden-two-ready", "on-garden-2");
         } else {
           acerLeaves.length = 0;
           lastLeafSpawn = 0;
@@ -1357,22 +1299,6 @@
       function rememberGardenTwo() {
         try {
           window.localStorage?.setItem(reachedGardenTwoKey, "true");
-        } catch {
-          return;
-        }
-      }
-
-      function hasReachedGardenThree() {
-        try {
-          return window.localStorage?.getItem(reachedGardenThreeKey) === "true";
-        } catch {
-          return false;
-        }
-      }
-
-      function rememberGardenThree() {
-        try {
-          window.localStorage?.setItem(reachedGardenThreeKey, "true");
         } catch {
           return;
         }
@@ -1404,23 +1330,16 @@
           rememberGardenTwo();
           goToLevel(1, { showChallenge: false });
         } else if (levelIndex === 1 && !embedMode) {
-          rememberGardenThree();
-          const base = window.location.pathname.replace(/[^/]*$/, "").replace(/\/(garden-[23]|waves)\/$/, "/");
+          const base = window.location.pathname.replace(/[^/]*$/, "").replace(/\/(garden-2|waves)\/$/, "/");
           window.location.href = `${base}waves.html`;
-        } else {
-          showMessage("Well done!", 0);
-          showCompleteModal();
         }
         return true;
       }
 
       function levelFromLocation() {
-        if (window.location.pathname.includes("garden-3")) return 2;
-        if (new URLSearchParams(window.location.search).get("garden") === "3") return 2;
-        if (hasReachedGardenThree()) return 2;
         if (window.location.pathname.includes("garden-2")) return 1;
         if (new URLSearchParams(window.location.search).get("garden") === "2") return 1;
-        if (hasReachedGardenTwo()) return 2;
+        if (hasReachedGardenTwo()) return 1;
         return 0;
       }
 
@@ -1443,8 +1362,8 @@
         // any garden-N/ suffix that may have been pushed by a previous navigation.
         const base = window.location.pathname
           .replace(/[^/]*$/, "")
-          .replace(/\/(garden-[23])\/$/, "/");
-        const suffixes = ["", "garden-2/", "garden-3/"];
+          .replace(/\/garden-2\/$/, "/");
+        const suffixes = ["", "garden-2/"];
         return `${base}${suffixes[index] ?? ""}${hash}`;
       }
 
@@ -1545,19 +1464,6 @@
         path.push(move);
         activeStroke.push(move);
         current = { ...to };
-        if (levelIndex === 2) {
-          const adj = (t, x, y) => Math.abs(t.x - x) + Math.abs(t.y - y) === 1;
-          if (!bellPlayed && result.cells.some(t => adj(t, 3, 3))) {
-            bellPlayed = true;
-            bellAudio.currentTime = 0;
-            bellAudio.play().catch(() => {});
-          }
-          if (!gongPlayed && result.cells.some(t => adj(t, 5, 7))) {
-            gongPlayed = true;
-            gongAudio.currentTime = 0;
-            gongAudio.play().catch(() => {});
-          }
-        }
         handleCompletion();
         draw();
         return true;
@@ -2109,71 +2015,10 @@
         ctx.save();
         ctx.globalAlpha *= itemAlpha();
 
-        if (levelIndex === 2) {
-          // 5 central positions each get one unique custom image; all others use original canvas assets
-          const g3custom = new Map([
-            ["3,3", 0],
-            ["5,3", 1],
-            ["1,5", 2],
-            ["4,8", 3],
-            ["3,5", 4],
-            ["5,7", 8],
-            ["7,1", 6],
-            ["1,3", 7],
-            ["2,1", 5],
-          ]);
-          for (const [id, type] of obstacles) {
-            const customIdx = g3custom.get(id);
-            const [x, y] = id.split(",").map(Number);
-            if (customIdx !== undefined) {
-              const img = garden3Sprites[customIdx];
-              const cx = boardLeft + x * cell + cell / 2;
-              const cy = boardTop + y * cell + cell / 2;
-              const size = cell * 1.18;
-              if (customIdx === 2) {
-                const ky = cy - cell * 0.12; // kodama shifted up ~5px CSS from original
-                // Right arm drawn BEFORE sprite so it sits behind the kodama
-                const wave = Math.sin(animationTime * 0.0032) * size * 0.04;
-                ctx.save();
-                ctx.strokeStyle = "#dedad0";
-                ctx.lineWidth = Math.max(1, size * 0.038);
-                ctx.lineCap = "round";
-                ctx.lineJoin = "round";
-                ctx.beginPath();
-                ctx.moveTo(cx - size * 0.09, ky + size * 0.05);
-                ctx.quadraticCurveTo(
-                  cx - size * 0.18, ky - size * 0.04,
-                  cx - size * 0.24, ky - size * 0.14 + wave
-                );
-                ctx.stroke();
-                ctx.restore();
-                if (img.complete && img.naturalWidth > 0) {
-                  ctx.drawImage(img, cx - size / 2, ky - size / 2, size, size);
-                }
-              } else if (img.complete && img.naturalWidth > 0) {
-                const drawW = customIdx === 4 ? size + cell * 0.24 : size;
-                ctx.drawImage(img, cx - drawW / 2, cy - size / 2, drawW, size);
-              }
-            } else {
-              const [kind, variant = "round"] = type.split(":");
-              if (kind === "house") drawSpriteAtCell(stoneLanternSprite, x, y);
-              else if (kind === "bonsai") drawBonsai(x, y, variant);
-              else if (kind === "pond" && variant === "koi") drawGardenPond(x, y);
-              else if (kind === "pond") { /* skip */ }
-              else drawRock(x, y, variant);
-            }
-          }
-          ctx.restore();
-          return;
-        }
-
         for (const [id, type] of obstacles) {
           const [x, y] = id.split(",").map(Number);
           const [kind, variant = "round"] = type.split(":");
-          if (kind === "house") {
-            if (levelIndex === 1) drawSpriteAtCell(stoneLanternSprite, x, y);
-            else drawStoneLantern(x, y, variant);
-          }
+          if (kind === "house") drawStoneLantern(x, y, variant);
           else if (kind === "bonsai") drawBonsai(x, y, variant);
           else if (kind === "pond" && variant === "koi") drawGardenPond(x, y);
           else if (kind === "pond") continue;
@@ -2521,7 +2366,7 @@
         konamiIndex = key === konamiCode[0] ? 1 : 0;
       });
       paperTexture.addEventListener("load", draw);
-      const startingLevel = embedMode ? levels.length - 1 : levelFromLocation();
+      const startingLevel = levelFromLocation();
       setupLevel(startingLevel, { showChallenge: false });
       if (!embedMode && startingLevel > 0) {
         replaceLevelPath(startingLevel);
