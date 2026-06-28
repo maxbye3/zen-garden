@@ -415,11 +415,11 @@
         gateStart    = performance.now();
         document.body.classList.add("started");
 
-        setTimeout(() => document.getElementById("white-fade")?.remove(), 2350);
         setTimeout(() => {
-          document.body.classList.add("arrived");
           tunnelVisible = false;
           toriiCtx.clearRect(0, 0, toriiCanvas.width, toriiCanvas.height);
+          // Navigate to the game after flying through the gates
+          window.location.href = "game.html";
         }, TUNNEL_REMOVE_MS);
       }
 
