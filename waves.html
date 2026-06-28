@@ -36,6 +36,11 @@
     body.started #white-fade {
       animation: reveal-waves 1.65s ease-in-out 0.18s forwards;
     }
+    /* Once the game is on screen, the fade is gone entirely so finger
+       drags always reach the waves underneath. */
+    body.playing #white-fade {
+      display: none;
+    }
     @keyframes pre-reveal {
       0%   { opacity: 1; }
       100% { opacity: 0; }
@@ -51,6 +56,29 @@
     }
     body.arrived #torii-canvas {
       animation: tunnel-fade 0.28s ease-out forwards;
+    }
+    /* The puzzle game, embedded over the waves. Its aspect ratio matches the
+       board exactly so there are no dead transparent zones inside the frame —
+       every pixel of the frame is the game, and everything around it is live,
+       draggable wave. */
+    #game-frame {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      aspect-ratio: 10 / 14;
+      height: min(92vh, calc(92vw * 14 / 10));
+      max-height: 92vh;
+      border: 0;
+      background: transparent;
+      z-index: 4;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.55s ease;
+    }
+    body.playing #game-frame {
+      opacity: 1;
+      pointer-events: auto;
     }
     #start-prompt {
       position: fixed;
@@ -82,26 +110,25 @@
     #back-to-garden2 {
       position: fixed;
       left: 50%;
-      top: calc(50% + 262px);
+      bottom: max(14px, env(safe-area-inset-bottom));
       z-index: 6;
       min-height: 38px;
       padding: 0 18px;
       border: 1px solid rgba(166, 42, 24, 0.22);
       border-radius: 999px;
-      background: rgba(255, 251, 238, 0.6);
+      background: rgba(255, 251, 238, 0.78);
       color: #2c2c26;
       font: 700 0.82rem/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       letter-spacing: 0.02em;
-      box-shadow: 0 6px 16px rgba(7, 31, 48, 0.12);
+      box-shadow: 0 6px 16px rgba(7, 31, 48, 0.18);
       transform: translateX(-50%);
       cursor: pointer;
       transition:
         opacity 180ms ease,
         transform 180ms ease;
     }
-    #back-to-garden2 {
-      display: block;
-    }
+    /* Gone the moment the game starts (intro or play) — it's only an entry
+       shortcut shown on the start screen. */
     body.started #back-to-garden2 {
       opacity: 0;
       pointer-events: none;
@@ -146,6 +173,7 @@
   <svg id="stage" xmlns="http://www.w3.org/2000/svg"></svg>
   <div id="white-fade"></div>
   <canvas id="torii-canvas" aria-hidden="true"></canvas>
+  <iframe id="game-frame" title="Zen Puzzle Garden" allowtransparency="true"></iframe>
   <button id="start-prompt" type="button">Click to start</button>
   <button id="back-to-garden2" type="button">go back to garden 2</button>
   <script>
@@ -153,6 +181,15 @@
       const SVG_NS = "http://www.w3.org/2000/svg";
       const stage = document.getElementById("stage");
       const startPrompt = document.getElementById("start-prompt");
+      const gameFrame = document.getElementById("game-frame");
+
+      function loadGame() {
+        const src = "game.html?embed=1";
+        if (gameFrame.getAttribute("src") !== src) gameFrame.setAttribute("src", src);
+      }
+      function revealGame() {
+        document.body.classList.add("playing");
+      }
 
       const BLUE  = "#56a3dc";
       const WHITE = "#ffffff";
@@ -415,17 +452,22 @@
         gateStart    = performance.now();
         document.body.classList.add("started");
 
+        // Preload the game so it's ready by the time the tunnel finishes.
+        loadGame();
+
         setTimeout(() => {
           tunnelVisible = false;
           toriiCtx.clearRect(0, 0, toriiCanvas.width, toriiCanvas.height);
-          // Navigate to the game after flying through the gates
-          window.location.href = "game.html";
+          // Drop the tunnel and bring the game in over the still-live waves —
+          // no page navigation, so the seigaiha stays draggable around it.
+          document.body.classList.add("arrived");
+          revealGame();
         }, TUNNEL_REMOVE_MS);
       }
 
       startPrompt.addEventListener("click", startIntro);
       document.getElementById("back-to-garden2").addEventListener("click", () => {
-        window.location.href = "game.html?garden=2";
+        window.location.href = "garden-2/";
       });
 
       let rt;
