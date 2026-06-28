@@ -266,6 +266,8 @@
       html:has(body.embed),
       body.embed {
         background: transparent;
+        width: 100%;
+        height: 100%;
       }
 
       body.embed #pond,
@@ -276,7 +278,8 @@
       body.embed .app {
         display: flex;
         flex-direction: column;
-        height: 100dvh;
+        width: 100%;
+        height: 100%;
         min-height: unset;
         padding: 0;
         gap: 0;
@@ -285,16 +288,18 @@
       body.embed .board-wrap {
         flex: 1;
         display: flex;
-        align-items: center;
-        justify-content: center;
+        align-items: stretch;
+        justify-content: stretch;
+        width: 100%;
         min-height: 0;
         overflow: hidden;
       }
 
       body.embed .stage {
-        width: min(100dvw, calc(100dvh * 10 / 14)) !important;
-        height: min(100dvh, calc(100dvw * 14 / 10)) !important;
+        width: 100% !important;
+        height: 100% !important;
         max-height: none !important;
+        aspect-ratio: unset !important;
       }
 
       body.embed .topbar {
@@ -704,7 +709,7 @@
       function drawSpriteAtCell(img, x, y) {
         const cx = boardLeft + x * cell + cell / 2;
         const cy = boardTop + y * cell + cell / 2;
-        const size = cell * 1.18;
+        const size = cell * 1.18 * 0.86;
         if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
       }
 
@@ -713,6 +718,7 @@
       if (embedMode) {
         document.body.classList.add("embed");
         document.getElementById("mainTitle").textContent = "Garden 3";
+        document.querySelector(".aim").textContent = "Drag your finger across the waves to turn them red";
       }
 
       const directions = [
@@ -1304,7 +1310,7 @@
         activeStroke = [];
         hintMove = null;
         easyMode = isEasyMode();
-        hintsLeft = Infinity;
+        hintsLeft = easyMode ? Infinity : 5;
         resetRecommended = false;
         completionHandled = false;
         positionHighlight = false;
@@ -1564,6 +1570,7 @@
 
       function hintsLeftText() {
         if (easyMode) return "unlimited hints.";
+        if (hintsLeft === 5) return "five hints left.";
         if (hintsLeft === 4) return "four hints left.";
         if (hintsLeft === 3) return "three hints left.";
         if (hintsLeft === 2) return "two hints left.";
@@ -1572,7 +1579,7 @@
       }
 
       function updateHintCounter() {
-        hintButton.textContent = `Hint (∞)`;
+        hintButton.textContent = easyMode ? `Hint (∞)` : `Hint (${hintsLeft})`;
       }
 
       function inBounds(tile) {
@@ -2000,8 +2007,8 @@
       function drawStoneLantern(x, y, variant) {
         const cx = boardLeft + x * cell + cell / 2;
         const cy = boardTop + y * cell + cell / 2;
-        const w = variant === "wide" ? cell * 0.56 : variant === "gate" ? cell * 0.48 : cell * 0.5;
-        const h = variant === "tall" ? cell * 0.54 : cell * 0.48;
+        const w = (variant === "wide" ? cell * 0.56 : variant === "gate" ? cell * 0.48 : cell * 0.5) * 0.95;
+        const h = (variant === "tall" ? cell * 0.54 : cell * 0.48) * 0.95;
         ctx.save();
         ctx.translate(cx, cy);
         ctx.fillStyle = "rgba(45, 45, 42, 0.2)";

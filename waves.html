@@ -23,27 +23,26 @@
       user-select: none;
       -webkit-user-select: none;
       z-index: 0;
+      background: #56a3dc;
     }
+    /* White curtain behind the torii on the start screen — it hides the waves
+       until "Click to start", then fades away to reveal them during the intro.
+       z-index 1 keeps it above the waves (z 0) but below the torii (z 2). */
     #white-fade {
       position: fixed;
       inset: 0;
       background: #ffffff;
       pointer-events: none;
       z-index: 1;
-      opacity: 0;
-      animation: pre-reveal 0.9s ease-out forwards;
+      opacity: 1;
     }
     body.started #white-fade {
-      animation: reveal-waves 1.65s ease-in-out 0.18s forwards;
+      animation: reveal-waves 1.6s ease-in-out forwards;
     }
-    /* Once the game is on screen, the fade is gone entirely so finger
-       drags always reach the waves underneath. */
+    /* Once the game is on screen the curtain is gone entirely so drags reach
+       the waves underneath. */
     body.playing #white-fade {
       display: none;
-    }
-    @keyframes pre-reveal {
-      0%   { opacity: 1; }
-      100% { opacity: 0; }
     }
     /* Canvas replaces SVG for the torii tunnel — no DOM reordering needed */
     #torii-canvas {
@@ -67,8 +66,8 @@
       top: 50%;
       transform: translate(-50%, -50%);
       aspect-ratio: 10 / 14;
-      height: min(92vh, calc(92vw * 14 / 10));
-      max-height: 92vh;
+      width: min(100dvw, calc(100dvh * 10 / 14));
+      height: min(100dvh, calc(100dvw * 14 / 10));
       border: 0;
       background: transparent;
       z-index: 4;
@@ -160,12 +159,12 @@
       0%, 100% { transform: translateY(-3px); }
       50%       { transform: translateY(3px); }
     }
-    @keyframes reveal-waves {
-      0%, 12% { opacity: 1; }
-      68%, 100% { opacity: 0; }
-    }
     @keyframes tunnel-fade {
       to { opacity: 0; }
+    }
+    @keyframes reveal-waves {
+      0%   { opacity: 1; }
+      100% { opacity: 0; }
     }
   </style>
 </head>
